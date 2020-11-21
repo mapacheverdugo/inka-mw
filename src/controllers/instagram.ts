@@ -19,7 +19,7 @@ const VIDEO_TYPE = "video";
 const AUDIO_TYPE = "audio";
 
 const showSelfMessages = true;
-const showLogs = false;
+const showLogs = true;
 
 export default class Instagram {
   user: string;
