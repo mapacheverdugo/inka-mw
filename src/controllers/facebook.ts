@@ -25,7 +25,7 @@ export default class FacebookPage {
   }
 
   handle = async (body: any) => {
-    console.log("body", body)
+    console.log("body", body.messaging)
     return this.messenger.handle(body);
     
   }
@@ -44,7 +44,7 @@ export default class FacebookPage {
   logMessage = (message: any) => {
     const recipient = message.recipient.id;
 
-    console.log(message);
+    //console.log(message);
       
     if ('attachments' in message.message) {
       const msgType = message.message.attachments[0].type;
@@ -85,7 +85,6 @@ export default class FacebookPage {
           'first_name',
           'last_name'
         ])
-        console.log("Funciono?", user);
       } catch (error) {
         console.log("Error obteniendo user:", error);
       }
@@ -95,7 +94,7 @@ export default class FacebookPage {
         keyApp: recipient,
         userKey: sender,
         msj: {
-          userName: user ? `${user.first_name} ${user.last_name}` : "Sin nombre",
+          userName: user ? `${user.first_name} ${user.last_name}` : "NN",
           type: "PV",
           attachmentType,
           attachmentUrl,
