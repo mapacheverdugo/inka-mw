@@ -25,7 +25,7 @@ export default class FacebookPage {
   }
 
   handle = async (body: any) => {
-    console.log("body", body, body.messaging, body.messaging[0])
+    console.log("body", body, body.messaging)
     return this.messenger.handle(body);
     
   }
