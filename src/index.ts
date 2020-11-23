@@ -267,8 +267,8 @@ messenger.on('message', async (message: any) => {
       });
       const res = await messenger.send(template, recipient);
       console.log(res);
-    } */
-  }
+    } 
+  }*/
 });
 
 
