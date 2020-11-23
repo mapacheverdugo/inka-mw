@@ -38,8 +38,8 @@ const messenger2 = new Messenger({
 
 (async () => {
     try {
-      let ig = new Instagram(process.env.INSTAGRAM_USER, process.env.INSTAGRAM_PASS);
-      ig.init();
+      //let ig = new Instagram(process.env.INSTAGRAM_USER, process.env.INSTAGRAM_PASS);
+      //ig.init();
 
       //let tg = new Telegram("56965830745");
       //tg.init();
