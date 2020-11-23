@@ -25,9 +25,6 @@ import Facebook from "./controllers/facebook";
     }
 })();
 
-
-
-
 const {
   Messenger,
   Button,
@@ -49,7 +46,7 @@ const {
 
 const app = express();
 
-/* const verifyRequestSignature = (req, res, buf) => {
+const verifyRequestSignature = (req: any, res: any, buf: any) => {
   const signature = req.headers['x-hub-signature'];
 
   if (!signature) {
@@ -57,18 +54,19 @@ const app = express();
   } else {
     const elements = signature.split('=');
     const signatureHash = elements[1];
-    const expectedHash = crypto.createHmac('sha1', process.env.FACEBOOK_APP_SECRET)
-      .update(buf)
-      .digest('hex');
+    if (process.env.FACEBOOK_APP_SECRET) {
+      const expectedHash = crypto.createHmac('sha1', process.env.FACEBOOK_APP_SECRET)
+        .update(buf)
+        .digest('hex');
 
-    if (signatureHash !== expectedHash) {
-      throw new Error('Couldn\'t validate the request signature.');
+      if (signatureHash !== expectedHash) {
+        throw new Error('Couldn\'t validate the request signature.');
+      }
     }
   }
 };
- */
 
-/* app.use(bodyParser.json({ verify: verifyRequestSignature })); */
+app.use(bodyParser.json({ verify: verifyRequestSignature }));
 app.use(bodyParser.urlencoded({ extended: true }));
 
 const messenger = new Messenger({
@@ -82,76 +80,9 @@ const messenger = new Messenger({
  */
 const timeout = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
-const initBot = async () => {
-  try {
-    /* messenger.setDomainWhitelist(WHITELISTED_DOMAINS); */
-
-    // Greeting Text
-    const greetingText = new GreetingText({ text: 'Welcome to the bot demo.' });
-    const greetingTextResult = await messenger.setGreetingText(greetingText);
-    console.log(`Greeting Text: ${JSON.stringify(greetingTextResult)}`);
-
-    // Get Started Button
-    const getStartedResult = await messenger.setGetStarted('START');
-    console.log(`Get Started: ${JSON.stringify(getStartedResult)}`);
-
-    // Persistent menu
-    const menuFAQ = new PersistentMenuItem({
-      type: 'web_url',
-      title: 'FAQS',
-      url: 'https://developers.facebook.com/docs/messenger-platform/faq',
-    });
-
-    const menuReference = new PersistentMenuItem({
-      type: 'web_url',
-      title: 'Reference',
-      url: 'https://developers.facebook.com/docs/messenger-platform/reference',
-    });
-
-    const menuHelp = new PersistentMenuItem({
-      title: 'Help',
-      type: 'nested',
-      call_to_actions: [
-        menuFAQ,
-        menuReference,
-      ],
-    });
-
-    const menuDocs = new PersistentMenuItem({
-      type: 'web_url',
-      title: 'Messenger Docs',
-      url: 'https://developers.facebook.com/docs/messenger-platform',
-    });
-
-    const menu = new PersistentMenu({
-      locale: 'default',
-      call_to_actions: [menuHelp, menuDocs],
-    });
-    const persistentMenuResult = await messenger.setPersistentMenu(menu);
-    console.log(`PersistentMenu: ${JSON.stringify(persistentMenuResult)}`);
-  } catch (e) {
-    console.log(e);
-  }
-};
-
-const getButton = (ratio: any) => new Button({
-  type: 'web_url',
-  title: 'Stack Overflow',
-  url: 'https://stackoverflow.com',
-  webview_height_ratio: ratio,
-});
-
-const getElement = (btn: any) => new Element({
-  title: 'Template example',
-  item_url: 'https://stackoverflow.com',
-  image_url: 'http://placehold.it/300x300',
-  subtitle: 'Subtitle',
-  buttons: [btn],
-});
-
 messenger.on('message', async (message: any) => {
   console.log(`Message received:`, message);
-  const recipient = message.sender.id;
+  /* const recipient = message.sender.id;
 
   // Allow receiving locations
   if ('attachments' in message.message) {
@@ -271,8 +202,8 @@ messenger.on('message', async (message: any) => {
         qrs,
       ), recipient);
     }
-
-    if (msg.includes('compact')) {
+ */
+    /* if (msg.includes('compact')) {
       const btn = getButton('compact');
       const elem = getElement(btn);
       await messenger.send(new GenericTemplate([elem]), recipient);
@@ -288,15 +219,15 @@ messenger.on('message', async (message: any) => {
       const btn = getButton('full');
       const elem = getElement(btn);
       await messenger.send(new GenericTemplate([elem]), recipient);
-    }
+    } */
 
-    if (msg.includes('multiple')) {
+   /*  if (msg.includes('multiple')) {
       await messenger.send({ text: 'Message 1' }, recipient);
       await timeout(3000);
       await messenger.send({ text: 'Message 2' }, recipient);
     }
-
-    if (msg.includes('receipt')) {
+ */
+    /* if (msg.includes('receipt')) {
       const template = new ReceiptTemplate({
         recipient_name: 'Name',
         order_number: '123',
@@ -336,39 +267,10 @@ messenger.on('message', async (message: any) => {
       });
       const res = await messenger.send(template, recipient);
       console.log(res);
-    }
+    } */
   }
 });
 
-messenger.on('delivery', () => {
-  // console.log(messenger.lastEntry);
-});
-
-messenger.on('postback', (message: any) => {
-  const recipient = message.sender.id;
-  const { payload } = message.postback;
-  console.log(`Payload received: ${payload}`);
-
-  if (payload === 'help') {
-    messenger.send({ text: 'A help message or template can go here.' }, recipient);
-  } else if (payload === 'START') {
-    const text = `Try sending me a message containing one of these keywords:
-text, image, video, reuse, bubble, "quick replies", list, compact, tall, full, nlp, code, or multiple`;
-    messenger.send({ text }, recipient);
-  }
-});
-
-messenger.on('read', () => {
-  // console.log(messenger.lastEntry);
-});
-
-messenger.on('optin', () => {
-  // console.log(messenger.lastEntry);
-});
-
-messenger.on('account_linking', () => {
-  // console.log(messenger.lastEntry);
-});
 
 app.get('/webhook', (req: any, res: any) => {
   if (req.query['hub.mode'] === 'subscribe' &&
@@ -379,16 +281,11 @@ app.get('/webhook', (req: any, res: any) => {
   }
 });
 
-app.get('/init', async (req: any, res: any) => {
-  await initBot();
-  res.sendStatus(200);
-});
-
 app.post('/webhook', (req: any, res: any) => {
   res.sendStatus(200);
   messenger.handle(req.body);
 });
 
 app.listen(process.env.PORT || 3000, () => {
-  console.log('App listening on port 3000!');
+  console.log(`Corriendo en el puerto ${process.env.PORT || 3000}`);
 });
