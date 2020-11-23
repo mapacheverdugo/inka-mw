@@ -5,6 +5,24 @@ import dotenv from 'dotenv';
 import crypto from 'crypto';
 import express from 'express';
 import bodyParser from 'body-parser';
+const {
+  Messenger,
+  Button,
+  Element,
+  Image,
+  Video,
+  GenericTemplate,
+  GreetingText,
+  PersistentMenuItem,
+  PersistentMenu,
+  QuickReply,
+  QuickReplies,
+  ReceiptTemplate,
+  ListTemplate,
+  Address,
+  Summary,
+  Adjustment,
+} = require('fbmessenger');
 
 import Instagram from "./controllers/instagram";
 import Telegram from "./controllers/telegram";
@@ -217,24 +235,7 @@ const messenger = new Messenger({
     }
 })();
 
-const {
-  Messenger,
-  Button,
-  Element,
-  Image,
-  Video,
-  GenericTemplate,
-  GreetingText,
-  PersistentMenuItem,
-  PersistentMenu,
-  QuickReply,
-  QuickReplies,
-  ReceiptTemplate,
-  ListTemplate,
-  Address,
-  Summary,
-  Adjustment,
-} = require('fbmessenger');
+
 
 const app = express();
 
