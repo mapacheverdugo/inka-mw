@@ -32,10 +32,6 @@ const messenger1 = new Messenger({
   pageAccessToken: process.env.FACEBOOK_PAGE_TOKEN_1,
 });
 
-const messenger2 = new Messenger({
-  pageAccessToken: process.env.FACEBOOK_PAGE_TOKEN_2,
-});
-
 (async () => {
     try {
       //let ig = new Instagram(process.env.INSTAGRAM_USER, process.env.INSTAGRAM_PASS);
@@ -234,10 +230,6 @@ const messenger2 = new Messenger({
           } 
         }*/
       });
-
-      messenger2.on('message', async (message: any) => {
-        console.log(`(2) Message received:`, message);
-      })
     } catch (error) {
       console.error("Error:", error);
     }
@@ -285,7 +277,6 @@ app.get('/webhook', (req: any, res: any) => {
 app.post('/webhook', (req: any, res: any) => {
   res.sendStatus(200);
   messenger1.handle(req.body);
-  messenger2.handle(req.body);
 });
 
 app.listen(process.env.PORT || 3000, () => {
