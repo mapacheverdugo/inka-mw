@@ -25,7 +25,9 @@ export default class FacebookPage {
   }
 
   handle = async (body: any) => {
+    console.log("body", body)
     return this.messenger.handle(body);
+    
   }
 
   startListener = () => {
