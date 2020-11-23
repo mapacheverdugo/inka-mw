@@ -25,7 +25,11 @@ export default class FacebookPage {
   }
 
   handle = async (body: any) => {
-    console.log("body", body, body.messaging)
+    body.entry.map((entry: any) => {
+      entry.messaging.map((messaging: any) => {
+        console.log(messaging, messaging.message, messaging.message.attachments)
+      })
+    })
     return this.messenger.handle(body);
     
   }
