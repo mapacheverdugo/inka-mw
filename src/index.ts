@@ -28,8 +28,12 @@ import Instagram from "./controllers/instagram";
 import Telegram from "./controllers/telegram";
 import Facebook from "./controllers/facebook";
 
-const messenger = new Messenger({
-  pageAccessToken: process.env.FACEBOOK_PAGE_TOKEN,
+const messenger1 = new Messenger({
+  pageAccessToken: process.env.FACEBOOK_PAGE_TOKEN_1,
+});
+
+const messenger2 = new Messenger({
+  pageAccessToken: process.env.FACEBOOK_PAGE_TOKEN_2,
 });
 
 (async () => {
@@ -40,8 +44,8 @@ const messenger = new Messenger({
       //let tg = new Telegram("56965830745");
       //tg.init();
       
-      messenger.on('message', async (message: any) => {
-        console.log(`Message received:`, message);
+      messenger1.on('message', async (message: any) => {
+        console.log(`(1) Message received:`, message);
         /* const recipient = message.sender.id;
       
         // Allow receiving locations
@@ -230,6 +234,10 @@ const messenger = new Messenger({
           } 
         }*/
       });
+
+      messenger2.on('message', async (message: any) => {
+        console.log(`(2) Message received:`, message);
+      })
     } catch (error) {
       console.error("Error:", error);
     }
@@ -275,9 +283,9 @@ app.get('/webhook', (req: any, res: any) => {
 });
 
 app.post('/webhook', (req: any, res: any) => {
-  console.log("recibido de pana");
   res.sendStatus(200);
-  messenger.handle(req.body);
+  messenger1.handle(req.body);
+  messenger2.handle(req.body);
 });
 
 app.listen(process.env.PORT || 3000, () => {
