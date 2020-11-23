@@ -40,7 +40,9 @@ export default class FacebookPage {
   }
 
   logMessage = (message: any) => {
-    const recipient = message.sender.id;
+    const recipient = message.recipient.id;
+
+    console.log(message);
       
     if ('attachments' in message.message) {
       const msgType = message.message.attachments[0].type;
@@ -77,27 +79,14 @@ export default class FacebookPage {
       let user;
 
       try {
-        user = await this.messenger.getUser()
-        console.log("Funciono sin nada?", user);
-        if (!user) {
-          console.log("No, no funciono, probando con el ID");
-          try {
-            user = await this.messenger.getUser(sender)
-            console.log("Funciono con ID?", user);
-          } catch (error) {
-            console.log("1 No funciono de ninguna forma :(", error);
-          }
-        }
+        user = await this.messenger.getUser(sender, [
+          'first_name',
+          'last_name'
+        ])
+        console.log("Funciono?", user);
       } catch (error) {
-        console.log("No funciono sin nada, probando con el ID", error);
-        try {
-          user = await this.messenger.getUser(sender)
-          console.log("Funciono con ID?", user);
-        } catch (error) {
-          console.log("2 No funciono de ninguna forma :(", error);
-        }
+        console.log("Error obteniendo user:", error);
       }
-
 
 
       resolve({
