@@ -30,12 +30,12 @@ export default class FacebookPage extends EventEmitter {
     }
   }
 
-  handle = async (body: any) => {
+  handle = async (body: any) => {/* 
     body.entry.map((entry: any) => {
       entry.messaging.map((messaging: any) => {
         console.log(messaging, messaging.message, messaging.message.attachments)
       })
-    })
+    }) */
     return this.messenger.handle(body);
     
   }

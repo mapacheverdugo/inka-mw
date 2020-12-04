@@ -88,6 +88,7 @@ const main = async () => {
         let fb = new Facebook(pageId, accessToken);
         fb.init();
         expressServer.on("facebookWebhook", (data) => {
+          console.log("handle data", data);
           fb.handle(data);
         })
         fb.on("message", (message: any) => {
