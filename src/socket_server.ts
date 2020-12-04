@@ -8,8 +8,8 @@ export default class SockerServer extends EventEmitter {
   constructor() {
     super();
 
-    this.server.listen(process.env.INSTAGRAM_PORT, () => {
-      console.log(`Servidor escuchando en: ${process.env.INSTAGRAM_PORT}`);
+    this.server.listen(process.env.PORT, () => {
+      console.log(`Servidor escuchando en: ${process.env.PORT}`);
     });
       
     this.server.on('connection', (socket: any) => {
