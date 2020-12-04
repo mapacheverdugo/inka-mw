@@ -7,6 +7,7 @@ import Instagram from "./controllers/instagram";
 import Telegram from "./controllers/telegram";
 import Facebook from "./controllers/facebook";
 import SocketClient from './socket_client';
+import SockerServer from './socket_server';
 
 let igs: Instagram[] = [];
 let fbs: Facebook[] = [];
@@ -53,11 +54,15 @@ const getRows = async () => {
 const main = async () => {
   try {
     const socketClient = new SocketClient();
+    const socketServer = new SockerServer();
+
+    socketServer.on("message", (message) => {
+      sendToUser(message);
+    });
 
     const rows = await getRows();
 
     for (const row of rows) {
-      console.log(row.app_name.toLowerCase().trim())
       if (row.app_name.toLowerCase().trim() == process.env.INSTAGRAM_VALUE?.toLowerCase().trim()) {
         const appKey = row.app_data1.trim();
         const user = row.app_data2.trim();
