@@ -1,88 +1,102 @@
 
 require('dotenv').config()
 
-import dotenv from 'dotenv';
-import crypto from 'crypto';
-import express from 'express';
-import bodyParser from 'body-parser';
-const {
-  Messenger,
-  Button,
-  Element,
-  Image,
-  Video,
-  GenericTemplate,
-  GreetingText,
-  PersistentMenuItem,
-  PersistentMenu,
-  QuickReply,
-  QuickReplies,
-  ReceiptTemplate,
-  ListTemplate,
-  Address,
-  Summary,
-  Adjustment,
-} = require('fbmessenger');
+import { Pool } from 'pg';
 
 import Instagram from "./controllers/instagram";
 import Telegram from "./controllers/telegram";
 import Facebook from "./controllers/facebook";
+import SocketClient from './socket_client';
 
-const app = express();
+let igs: Instagram[] = [];
+let fbs: Facebook[] = [];
+let tgs: Telegram[] = [];
 
-const verifyRequestSignature = (req: any, res: any, buf: any) => {
-  const signature = req.headers['x-hub-signature'];
+const pool = new Pool();
 
-  if (!signature) {
-    throw new Error('Couldn\'t validate the signature.');
-  } else {
-    const elements = signature.split('=');
-    const signatureHash = elements[1];
-    if (process.env.FACEBOOK_APP_SECRET) {
-      const expectedHash = crypto.createHmac('sha1', process.env.FACEBOOK_APP_SECRET)
-        .update(buf)
-        .digest('hex');
+const sendToUser = (message: any) => {
+  let founded;
 
-      if (signatureHash !== expectedHash) {
-        throw new Error('Couldn\'t validate the request signature.');
+  if (!founded) {
+    for (const ig of igs) {
+      founded = ig;
+    }
+  }
+
+  if (!founded) {
+    for (const fb of fbs) {
+      founded = fb;
+    }
+  }
+
+  if (!founded) {
+    for (const tg of tgs) {
+      founded = tg;
+    }
+  }
+
+  if (founded) founded.sendMessage(message);
+}
+
+const getRows = async () => {
+  return new Promise<any[]>(async (resolve, reject) => {
+    pool.query('SELECT NOW()', (err, res) => {
+      pool.end()
+    });
+
+    const res = await pool.query('SELECT * FROM inka_app');
+    let rows = res.rows;
+    resolve(rows);
+  });
+}
+
+const main = async () => {
+  try {
+    const socketClient = new SocketClient();
+
+    const rows = await getRows();
+
+    for (const row of rows) {
+      console.log(row.app_name.toLowerCase().trim())
+      if (row.app_name.toLowerCase().trim() == process.env.INSTAGRAM_VALUE?.toLowerCase().trim()) {
+        const appKey = row.app_data1.trim();
+        const user = row.app_data2.trim();
+        const password = row.app_data3.trim();
+        let ig = new Instagram(user, password);
+        ig.init();
+        ig.on("message", (message: any) => {
+          socketClient.write(message);
+        });
+        igs.push(ig);
+      }
+
+      if (row.app_name.toLowerCase().trim() == process.env.FACEBOOK_VALUE) {
+        const appKey = row.app_data1.trim();
+        const pageId = row.app_data2.trim();
+        const accessToken = row.app_data3.trim();
+        let fb = new Facebook(row.app_data1, row.app_data2);
+        fb.init();
+        fbs.push(fb);
+      }
+
+      if (row.app_name.toLowerCase().trim() == process.env.TELEGRAM_VALUE) {
+        const appKey = row.app_data1.trim();
+        const phone = row.app_data2.trim();
+        let tg = new Telegram(phone);
+        tg.init();
+        tgs.push(tg);
       }
     }
+    
+  } catch (error) {
+    console.error("Error:", error);
+    await pool.end();
   }
-};
+}
 
-app.use(bodyParser.json({ verify: verifyRequestSignature }));
-app.use(bodyParser.urlencoded({ extended: true }));
+main();
 
-const fb = new Facebook(process.env.FACEBOOK_PAGE_TOKEN_1);
 
-(async () => {
-    try {
-      //let ig = new Instagram(process.env.INSTAGRAM_USER, process.env.INSTAGRAM_PASS);
-      //ig.init();
 
-      //let tg = new Telegram("56965830745");
-      //tg.init();
-      
-      fb.init();
-    } catch (error) {
-      console.error("Error:", error);
-    }
-})();
 
-app.get('/webhook', (req: any, res: any) => {
-  if (req.query['hub.mode'] === 'subscribe' &&
-    req.query['hub.verify_token'] === process.env.FACEBOOK_VERIFY_TOKEN) {
-    res.send(req.query['hub.challenge']);
-  } else {
-    res.sendStatus(400);
-  }
-});
 
-app.post('/webhook', (req: any, res: any) => {
-  res.sendStatus(200);
-  fb.handle(req.body);
-});
-
-app.listen(process.env.PORT || 3000, () => {
-  console.log(`Servidor HTTP corriendo en el puerto ${process.env.PORT || 3000}`);
-});

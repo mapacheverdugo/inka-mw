@@ -8,7 +8,6 @@ const FILE_TYPE = "file";
 const GEO_TYPE = "geo";
 const CONTACT_TYPE = null;
 
-const showSelfMessages = true;
 const showLogs = true;
 
 export default class Telegram {
@@ -206,6 +205,28 @@ export default class Telegram {
         type: "new_message"
       });
     })
+  }
+
+  sendMessage = async (message: any) => {
+    
+
+    if (message && message.type == "RESPONSE_MESSAGE") {
+      if (message.attachmentType && message.attachmentType != "" && message.attachmentUrl && message.attachmentUrl != "") {
+        switch (message.attachmentType) {
+          case IMAGE_TYPE:
+            
+            break;
+          case AUDIO_TYPE:
+            
+            break;
+          case VIDEO_TYPE:
+            
+            break;
+        }
+      } else {
+        
+      }
+    }
   }
 
  }

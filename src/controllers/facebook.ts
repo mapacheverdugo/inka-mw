@@ -1,19 +1,22 @@
-const { Messenger } = require('fbmessenger');
+const { Messenger, Text, Audio, Video, Image, File } = require('fbmessenger');
 
 const IMAGE_TYPE = "image";
 const VIDEO_TYPE = "video";
 const AUDIO_TYPE = "audio";
+const FILE_TYPE = "file";
+const GEO_TYPE = "geo";
 
-const showSelfMessages = true;
 const showLogs = true;
 
 export default class FacebookPage {
   messenger: any;
+  pageId: any;
 
-  constructor(pageAccessToken: string | undefined) {
+  constructor(pageId: string | undefined, pageAccessToken: string | undefined) {
     this.messenger = new Messenger({
       pageAccessToken
     });
+    this.pageId = pageId;
   }
 
   init = async () => {
@@ -38,9 +41,13 @@ export default class FacebookPage {
     if (showLogs) console.log(`[Facebook] Acceso correcto. Escuchando mensajes...`);
 
     this.messenger.on('message', async (message: any) => {
-      if (showLogs) this.logMessage(message);
-      let parsedMessage = await this.parseMessage(message);
-      //console.log(parsedMessage);
+      const recipient = message.recipient.id;
+
+      if (this.pageId == recipient) {
+        if (showLogs) this.logMessage(message);
+        let parsedMessage = await this.parseMessage(message);
+        //console.log(parsedMessage);
+      }
     });
     
   }
@@ -49,24 +56,27 @@ export default class FacebookPage {
     const recipient = message.recipient.id;
 
     //console.log(message);
+
+    if (this.pageId == recipient) {
       
     if ('attachments' in message.message) {
-      const msgType = message.message.attachments[0].type;
-      if (msgType === 'location') {
-        console.log('Location received');
-        const text = `${message.message.attachments[0].title}:
-                      lat: ${message.message.attachments[0].payload.coordinates.lat},
-                      long: ${message.message.attachments[0].payload.coordinates.long}`;
-
-      }
+      const type = message.message.attachments[0].type;
+      if (type == "location") {
+        console.log(`[Facebook - ${recipient}] recibió una ubicación: https://www.google.com/maps/place/${message.message.attachments[0].payload.coordinates.lat},${message.message.attachments[0].payload.coordinates.long}`);
+      } else if (type == "audio") {
+        console.log(`[Facebook - ${recipient}] recibió un audio: ${message.message.attachments[0].payload.url}`);
+      } else if (type == "video") {
+        console.log(`[Facebook - ${recipient}] recibió un video: ${message.message.attachments[0].payload.url}`);
+      } else if (type == "image") {
+        console.log(`[Facebook - ${recipient}] recibió una imagen: ${message.message.attachments[0].payload.url}`);
+      } else if (type == "file") {
+        console.log(`[Facebook - ${recipient}] recibió un archivo: ${message.message.attachments[0].payload.url}`);
+      } 
   
-      if (['audio', 'video', 'image', 'file'].includes(msgType)) {
-        const attachment = message.message.attachments[0].payload.url;
-        console.log(`Attachment received: ${attachment}`);
-      }
     } else if ('text' in message.message) {
-      console.log(`[Facebook - ${recipient}] Mensaje recibió:`, message.message.text);
+      console.log(`[Facebook - ${recipient}] recibió: "${message.message.text}"`);
     }
+  }
   }
 
   parseMessage = (message: any) => {
@@ -78,8 +88,34 @@ export default class FacebookPage {
       let attachmentUrl;
       let mensajeTexto;
 
+      if (this.pageId == recipient) {
+
       if ('text' in message.message) {
         mensajeTexto = message.message.text;
+      }
+
+      if ('attachments' in message.message) {
+        const type = message.message.attachments[0].type;
+        if (type == "location" && GEO_TYPE) {
+          attachmentType == GEO_TYPE;
+          attachmentUrl = `https://www.google.com/maps/place/${message.message.attachments[0].payload.coordinates.lat},${message.message.attachments[0].payload.coordinates.long}`;
+        }
+        if (type == "audio" && AUDIO_TYPE) {
+          attachmentType == AUDIO_TYPE;
+          attachmentUrl = message.message.attachments[0].payload.url;
+        }
+        if (type == "video" && VIDEO_TYPE) {
+          attachmentType == VIDEO_TYPE;
+          attachmentUrl = message.message.attachments[0].payload.url;
+        }
+        if (type == "image" && IMAGE_TYPE) {
+          attachmentType == IMAGE_TYPE;
+          attachmentUrl = message.message.attachments[0].payload.url;
+        }
+        if (type == "file" && FILE_TYPE) {
+          attachmentType == FILE_TYPE;
+          attachmentUrl = message.message.attachments[0].payload.url;
+        }
       }
 
       let user;
@@ -90,7 +126,7 @@ export default class FacebookPage {
           'last_name'
         ])
       } catch (error) {
-        console.log("Error obteniendo user:", error);
+        if (showLogs) console.log("Error obteniendo user:", error);
       }
 
 
@@ -106,6 +142,63 @@ export default class FacebookPage {
         },
         type: "new_message"
       });
-    })
+    } else {
+      reject("No coinciden los IDs")
+    }
+    });
+    
   }
+
+  sendMessage = async (message: any) => {
+    if (message && message.type == "RESPONSE_MESSAGE") {
+      if (message.attachmentType && message.attachmentType != "" && message.attachmentUrl && message.attachmentUrl != "") {
+        switch (message.attachmentType) {
+          case IMAGE_TYPE:
+            this.sendImage(message.userKey, message.attachmentUrl);
+            break;
+          case AUDIO_TYPE:
+            this.sendAudio(message.userKey, message.attachmentUrl);
+            break;
+          case VIDEO_TYPE:
+            this.sendVideo(message.userKey, message.attachmentUrl);
+            break;
+          case FILE_TYPE:
+            this.sendVideo(message.userKey, message.attachmentUrl);
+            break;
+        }
+      } else {
+        this.sendText(message.userKey, message.mensajeTexto)
+      }
+    }
+  }
+
+  sendText = async (userId: string, text: string) => {
+    this.messenger.send(new Text(text), userId);
+  }
+
+  sendAudio = async (userId: string, url: string) => {
+    this.messenger.send(new Audio({
+      url,
+    }), userId);
+  }
+
+  sendImage = async (userId: string, url: string) => {
+    this.messenger.send(new Image({
+      url,
+    }), userId);
+  }
+
+  sendVideo = async (userId: string, url: string) => {
+    this.messenger.send(new Video({
+      url,
+    }), userId);
+  }
+
+  sendFile = async (userId: string, url: string) => {
+    this.messenger.send(new File({
+      url,
+    }), userId);
+  }
+
+
 }

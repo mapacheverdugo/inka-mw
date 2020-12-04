@@ -1,6 +1,8 @@
 
 require('dotenv').config()
 
+const EventEmitter = require('events');
+
 import { promisify } from "util";
 import { readFile } from "fs";
 import {
@@ -18,15 +20,15 @@ const IMAGE_TYPE = "image";
 const VIDEO_TYPE = "video";
 const AUDIO_TYPE = "audio";
 
-const showSelfMessages = true;
 const showLogs = true;
 
-export default class Instagram {
+export default class Instagram extends EventEmitter {
   user: string;
   pass: string;
   ig: IgApiClientRealtime = withRealtime(new IgApiClient());
 
   constructor(user: string | undefined, pass: string | undefined) {
+    super();
     if (user && pass) {
       this.user = user;
       this.pass = pass;
@@ -81,10 +83,11 @@ export default class Instagram {
 
       this.ig.realtime.on('message', async (data) => {
         let isSelfMessage = userId == data.message.user_id;
-        if (showSelfMessages || !isSelfMessage) {
+        if (!isSelfMessage) {
           if (data.message.op == 'add') {
             if (showLogs) this.logMessage(data);
             let parsedMessage = await this.parseMessage(data);
+            this.emit('message', parsedMessage);
             //console.log(parsedMessage);
           } else {
             if (showLogs) console.log('La operacion era otra', data.message.op);
@@ -177,15 +180,54 @@ export default class Instagram {
     })
   }
 
-  sendPhoto = async (thread: DirectThreadEntity) => {
-    const photo = await readFileAsync('PATH_TO_PHOTO.jpg');
-    console.log(await thread.broadcastPhoto({
-        file: photo,
+  sendMessage = async (message: any) => {
+    const threads = await this.ig.feed.directInbox().records();
+    let thread;
+
+    for (const t of threads) {
+      console.log(t.userIds);
+      thread = t;
+    }
+
+    if (thread && message && message.type == "RESPONSE_MESSAGE") {
+      if (message.attachmentType && message.attachmentType != "" && message.attachmentUrl && message.attachmentUrl != "") {
+        switch (message.attachmentType) {
+          case IMAGE_TYPE:
+            this.sendImage(thread, message.attachmentUrl);
+            break;
+          case AUDIO_TYPE:
+            this.sendAudio(thread, message.attachmentUrl);
+            break;
+          case VIDEO_TYPE:
+            this.sendVideo(thread, message.attachmentUrl);
+            break;
+        }
+      } else {
+        this.sendText(thread, message.mensajeTexto)
+      }
+    }
+  }
+
+  sendText = async (thread: DirectThreadEntity, text: string) => {
+    console.log(await thread.broadcastText(text));
+  }
+
+  sendAudio = async (thread: DirectThreadEntity, url: string) => {
+    const audio = await readFileAsync(url);
+    console.log(await thread.broadcastVoice({
+        file: audio,
     }));
   }
 
-  sendVideo = async (thread: DirectThreadEntity) => {
-    const video = await readFileAsync('PATH_TO_VIDEO.mp4');
+  sendImage = async (thread: DirectThreadEntity, url: string) => {
+    const image = await readFileAsync(url);
+    console.log(await thread.broadcastPhoto({
+        file: image,
+    }));
+  }
+
+  sendVideo = async (thread: DirectThreadEntity, url: string) => {
+    const video = await readFileAsync(url);
     console.log(await thread.broadcastVideo({
         video,
         transcodeDelay: 5 * 1000,
