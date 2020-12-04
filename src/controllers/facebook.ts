@@ -1,3 +1,5 @@
+import {EventEmitter} from "events";
+
 const { Messenger, Text, Audio, Video, Image, File } = require('fbmessenger');
 
 const IMAGE_TYPE = "image";
@@ -8,11 +10,12 @@ const GEO_TYPE = "geo";
 
 const showLogs = true;
 
-export default class FacebookPage {
+export default class FacebookPage extends EventEmitter {
   messenger: any;
   pageId: any;
 
   constructor(pageId: string | undefined, pageAccessToken: string | undefined) {
+    super();
     this.messenger = new Messenger({
       pageAccessToken
     });
@@ -46,6 +49,7 @@ export default class FacebookPage {
       if (this.pageId == recipient) {
         if (showLogs) this.logMessage(message);
         let parsedMessage = await this.parseMessage(message);
+        this.emit("message", parsedMessage);
         //console.log(parsedMessage);
       }
     });

@@ -8,6 +8,7 @@ import Telegram from "./controllers/telegram";
 import Facebook from "./controllers/facebook";
 import SocketClient from './socket_client';
 import SockerServer from './socket_server';
+import ExpressServer from './express_server';
 
 let igs: Instagram[] = [];
 let fbs: Facebook[] = [];
@@ -20,23 +21,27 @@ const sendToUser = (message: any) => {
 
   if (!founded) {
     for (const ig of igs) {
-      founded = ig;
+      if (ig.user == message.keyApp)
+        founded = ig;
     }
   }
 
   if (!founded) {
     for (const fb of fbs) {
-      founded = fb;
+      if (fb.pageId == message.keyApp)
+        founded = fb;
     }
   }
 
+  /* 
   if (!founded) {
     for (const tg of tgs) {
       founded = tg;
     }
-  }
+  } */
 
   if (founded) founded.sendMessage(message);
+  else console.log("No encontradoooooo", message)
 }
 
 const getRows = async () => {
@@ -53,6 +58,7 @@ const getRows = async () => {
 
 const main = async () => {
   try {
+    const expressServer = new ExpressServer();
     const socketClient = new SocketClient();
     const socketServer = new SockerServer();
 
@@ -63,7 +69,7 @@ const main = async () => {
     const rows = await getRows();
 
     for (const row of rows) {
-      if (row.app_name.toLowerCase().trim() == process.env.INSTAGRAM_VALUE?.toLowerCase().trim()) {
+      /* if (row.app_name.toLowerCase().trim() == process.env.INSTAGRAM_VALUE?.toLowerCase().trim()) {
         const appKey = row.app_data1.trim();
         const user = row.app_data2.trim();
         const password = row.app_data3.trim();
@@ -73,14 +79,20 @@ const main = async () => {
           socketClient.write(message);
         });
         igs.push(ig);
-      }
+      } */
 
-      if (row.app_name.toLowerCase().trim() == process.env.FACEBOOK_VALUE) {
+      if (row.app_name.toLowerCase().trim() == process.env.FACEBOOK_VALUE?.toLowerCase().trim()) {
         const appKey = row.app_data1.trim();
         const pageId = row.app_data2.trim();
         const accessToken = row.app_data3.trim();
-        let fb = new Facebook(row.app_data1, row.app_data2);
+        let fb = new Facebook(pageId, accessToken);
         fb.init();
+        expressServer.on("facebookWebhook", (data) => {
+          fb.handle(data);
+        })
+        fb.on("message", (message: any) => {
+          socketClient.write(message);
+        });
         fbs.push(fb);
       }
 

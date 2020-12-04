@@ -24,7 +24,7 @@ export default class ExpressServer extends EventEmitter {
     
     this.app.post('/webhook', (req: any, res: any) => {
       res.sendStatus(200);
-      //fb.handle(req.body);
+      this.emit("facebookWebhook", req.body);
       
     });
     

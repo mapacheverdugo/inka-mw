@@ -69,7 +69,7 @@ export default class Instagram extends EventEmitter {
         if (this.user && this.pass) {
         this.ig.state.generateDevice(this.user);
         await this.ig.account.login(this.user, this.pass);
-        resolve();
+        resolve(null);
         } else {
         reject("Falta usuario o contraseña");
         }
@@ -167,7 +167,7 @@ export default class Instagram extends EventEmitter {
 
       resolve({
         keyApp: this.user,
-        userKey: data.message.user_id,
+        userKey: data.message.thread_id,
         msj: {
           userName: userInfo.username,
           type: "PV",
@@ -181,12 +181,13 @@ export default class Instagram extends EventEmitter {
   }
 
   sendMessage = async (message: any) => {
-    const threads = await this.ig.feed.directInbox().records();
+    let threads = await this.ig.feed.directInbox().records();
     let thread;
 
     for (const t of threads) {
-      console.log(t.userIds);
-      thread = t;
+      if (t.threadId == message.userKey) {
+        thread = t;
+      }
     }
 
     if (thread && message && message.type == "RESPONSE_MESSAGE") {
@@ -209,7 +210,7 @@ export default class Instagram extends EventEmitter {
   }
 
   sendText = async (thread: DirectThreadEntity, text: string) => {
-    console.log(await thread.broadcastText(text));
+    await thread.broadcastText(text);
   }
 
   sendAudio = async (thread: DirectThreadEntity, url: string) => {
