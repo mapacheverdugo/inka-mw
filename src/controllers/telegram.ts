@@ -1,3 +1,5 @@
+import { EventEmitter } from "events";
+
 const { MTProto, getSRPParams } = require('@mtproto/core');
 const prompts = require('prompts');
 
@@ -10,12 +12,13 @@ const CONTACT_TYPE = null;
 
 const showLogs = true;
 
-export default class Telegram {
+export default class Telegram extends EventEmitter {
 
   mtproto: typeof MTProto;
   phone: string;
 
   constructor(phone: string) {
+    super();
     this.phone = phone;
     this.mtproto = new MTProto({
       api_id: process.env.TELEGRAM_API_ID,
@@ -111,9 +114,12 @@ export default class Telegram {
 
     this.mtproto.updates.on('updates', (updateInstance: any) => {
       updateInstance.updates.map(async (update: any) => {
-        if (update._ == "updateNewMessage") {
+
+        if (update._ == "updateNewMessage" && update.message.out) {
+          console.log(update);
           if (showLogs) this.logMessage(update.message);
           let parsedMessage = await this.parseMessage(update.message);
+          this.emit("message", parsedMessage);
           //console.log(parsedMessage);
         }
       })
@@ -193,8 +199,8 @@ export default class Telegram {
       }
 
       resolve({
-        keyApp: this.phone,
-        userKey: data.from_id,
+        keyApp: this.phone + "-t",
+        userKey: data.from_id.toString(),
         msj: {
           userName: "",
           type: "PV",
@@ -211,8 +217,8 @@ export default class Telegram {
     
 
     if (message && message.type == "RESPONSE_MESSAGE") {
-      if (message.attachmentType && message.attachmentType != "" && message.attachmentUrl && message.attachmentUrl != "") {
-        switch (message.attachmentType) {
+      if (message.msj.attachmentType && message.msj.attachmentType != "" && message.msj.attachmentUrl && message.msj.attachmentUrl != "") {
+        switch (message.msj.attachmentType) {
           case IMAGE_TYPE:
             
             break;
@@ -224,7 +230,11 @@ export default class Telegram {
             break;
         }
       } else {
-        
+        this.call("messages.sendMessage", {
+          message: message.msj.mensajeTexto,
+          peer: 777000,
+          random_id: Math.floor(Math.random() * 1000000000)
+        });
       }
     }
   }

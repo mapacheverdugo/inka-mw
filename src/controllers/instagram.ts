@@ -64,7 +64,8 @@ export default class Instagram extends EventEmitter {
 
   login = async () => {
     return new Promise(async (resolve, reject) => {
-      if (showLogs) console.log(`[Instagram - @${this.user}] Iniciando sesión...`);
+      try {
+        if (showLogs) console.log(`[Instagram - @${this.user}] Iniciando sesión...`);
       
         if (this.user && this.pass) {
         this.ig.state.generateDevice(this.user);
@@ -73,6 +74,10 @@ export default class Instagram extends EventEmitter {
         } else {
         reject("Falta usuario o contraseña");
         }
+      } catch (error) {
+        reject(error);
+      }
+      
     });
   }
 
@@ -191,20 +196,20 @@ export default class Instagram extends EventEmitter {
     }
 
     if (thread && message && message.type == "RESPONSE_MESSAGE") {
-      if (message.attachmentType && message.attachmentType != "" && message.attachmentUrl && message.attachmentUrl != "") {
+      if (message.msj.attachmentType && message.msj.attachmentType != "" && message.msj.attachmentUrl && message.msj.attachmentUrl != "") {
         switch (message.attachmentType) {
           case IMAGE_TYPE:
-            this.sendImage(thread, message.attachmentUrl);
+            this.sendImage(thread, message.msj.attachmentUrl);
             break;
           case AUDIO_TYPE:
-            this.sendAudio(thread, message.attachmentUrl);
+            this.sendAudio(thread, message.msj.attachmentUrl);
             break;
           case VIDEO_TYPE:
-            this.sendVideo(thread, message.attachmentUrl);
+            this.sendVideo(thread, message.msj.attachmentUrl);
             break;
         }
       } else {
-        this.sendText(thread, message.mensajeTexto)
+        this.sendText(thread, message.msj.mensajeTexto)
       }
     }
   }

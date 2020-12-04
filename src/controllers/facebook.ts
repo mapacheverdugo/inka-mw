@@ -155,23 +155,23 @@ export default class FacebookPage extends EventEmitter {
 
   sendMessage = async (message: any) => {
     if (message && message.type == "RESPONSE_MESSAGE") {
-      if (message.attachmentType && message.attachmentType != "" && message.attachmentUrl && message.attachmentUrl != "") {
+      if (message.msj.attachmentType && message.msj.attachmentType != "" && message.msj.attachmentUrl && message.msj.attachmentUrl != "") {
         switch (message.attachmentType) {
           case IMAGE_TYPE:
-            this.sendImage(message.userKey, message.attachmentUrl);
+            this.sendImage(message.userKey, message.msj.attachmentUrl);
             break;
           case AUDIO_TYPE:
-            this.sendAudio(message.userKey, message.attachmentUrl);
+            this.sendAudio(message.userKey, message.msj.attachmentUrl);
             break;
           case VIDEO_TYPE:
-            this.sendVideo(message.userKey, message.attachmentUrl);
+            this.sendVideo(message.userKey, message.msj.attachmentUrl);
             break;
           case FILE_TYPE:
-            this.sendVideo(message.userKey, message.attachmentUrl);
+            this.sendVideo(message.userKey, message.msj.attachmentUrl);
             break;
         }
       } else {
-        this.sendText(message.userKey, message.mensajeTexto)
+        this.sendText(message.userKey, message.msj.mensajeTexto)
       }
     }
   }

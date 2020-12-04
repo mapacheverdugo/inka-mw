@@ -33,12 +33,12 @@ const sendToUser = (message: any) => {
     }
   }
 
-  /* 
   if (!founded) {
     for (const tg of tgs) {
-      founded = tg;
+      if (tg.phone + "-t" == message.keyApp)
+        founded = tg;
     }
-  } */
+  }
 
   if (founded) founded.sendMessage(message);
   else console.log("No encontradoooooo", message)
@@ -59,27 +59,47 @@ const getRows = async () => {
 const main = async () => {
   try {
     const expressServer = new ExpressServer();
-    const socketClient = new SocketClient();
-    const socketServer = new SockerServer();
+    if (process.env.INSTAGRAM_PORT) {
+      const instagramSocket = new SockerServer(parseInt(process.env.INSTAGRAM_PORT));
+      instagramSocket.on("message", (message) => {
+        sendToUser(message);
+      });
+    }
 
-    socketServer.on("message", (message) => {
-      sendToUser(message);
-    });
+    if (process.env.FACEBOOK_PORT) {
+      const facebookSocket = new SockerServer(parseInt(process.env.FACEBOOK_PORT));
+      facebookSocket.on("message", (message) => {
+        sendToUser(message);
+      });
+    }
+
+    if (process.env.TELEGRAM_PORT) {
+      const telegramSocket = new SockerServer(parseInt(process.env.TELEGRAM_PORT));
+      telegramSocket.on("message", (message) => {
+        sendToUser(message);
+      });
+    }
 
     const rows = await getRows();
 
     for (const row of rows) {
-      /* if (row.app_name.toLowerCase().trim() == process.env.INSTAGRAM_VALUE?.toLowerCase().trim()) {
-        const appKey = row.app_data1.trim();
-        const user = row.app_data2.trim();
-        const password = row.app_data3.trim();
-        let ig = new Instagram(user, password);
-        ig.init();
-        ig.on("message", (message: any) => {
-          socketClient.write(message);
-        });
-        igs.push(ig);
-      } */
+      if (row.app_name.toLowerCase().trim() == process.env.INSTAGRAM_VALUE?.toLowerCase().trim()) {
+        try {
+          const appKey = row.app_data1.trim();
+          const user = row.app_data2.trim();
+          const password = row.app_data3.trim();
+          let ig = new Instagram(user, password);
+          ig.init();
+          ig.on("message", (message: any) => {
+            const socketClient = new SocketClient();
+            socketClient.write(message);
+          });
+          igs.push(ig);
+        } catch (error) {
+          console.log(error);
+        }
+        
+      }
 
       if (row.app_name.toLowerCase().trim() == process.env.FACEBOOK_VALUE?.toLowerCase().trim()) {
         const appKey = row.app_data1.trim();
@@ -88,19 +108,23 @@ const main = async () => {
         let fb = new Facebook(pageId, accessToken);
         fb.init();
         expressServer.on("facebookWebhook", (data) => {
-          console.log("handle data", data);
           fb.handle(data);
         })
         fb.on("message", (message: any) => {
+          const socketClient = new SocketClient();
           socketClient.write(message);
         });
         fbs.push(fb);
       }
 
-      if (row.app_name.toLowerCase().trim() == process.env.TELEGRAM_VALUE) {
+      if (row.app_name.toLowerCase().trim() == process.env.TELEGRAM_VALUE?.toLowerCase().trim()) {
         const appKey = row.app_data1.trim();
         const phone = row.app_data2.trim();
         let tg = new Telegram(phone);
+        tg.on("message", (message: any) => {
+          const socketClient = new SocketClient();
+          socketClient.write(message);
+        });
         tg.init();
         tgs.push(tg);
       }

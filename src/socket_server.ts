@@ -5,11 +5,11 @@ import Net from 'net';
 export default class SockerServer extends EventEmitter {
   server = new Net.Server();
 
-  constructor() {
+  constructor(port: number) {
     super();
 
-    this.server.listen(process.env.INSTAGRAM_PORT, () => {
-      console.log(`Servidor escuchando en: ${process.env.INSTAGRAM_PORT}`);
+    this.server.listen(port, () => {
+      console.log(`Servidor escuchando en: ${port}`);
     });
       
     this.server.on('connection', (socket: any) => {
