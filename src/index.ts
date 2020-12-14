@@ -50,7 +50,7 @@ const getRows = async () => {
       pool.end()
     });
 
-    const res = await pool.query('SELECT * FROM inka_app');
+    const res = await pool.query('SELECT * FROM inka_app WHERE app_activo = 1');
     let rows = res.rows;
     resolve(rows);
   });
@@ -124,8 +124,10 @@ const main = async () => {
         tg.on("message", (message: any) => {
           const socketClient = new SocketClient();
           socketClient.write(message);
+          tg.sendMessage(message)
         });
         tg.init();
+        
         tgs.push(tg);
       }
     }

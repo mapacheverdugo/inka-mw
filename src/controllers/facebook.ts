@@ -49,8 +49,9 @@ export default class FacebookPage extends EventEmitter {
       if (this.pageId == recipient) {
         if (showLogs) this.logMessage(message);
         let parsedMessage = await this.parseMessage(message);
+        console.log("Mensaje del cliente al core", parsedMessage);
         this.emit("message", parsedMessage);
-        //console.log(parsedMessage);
+        
       }
     });
     
@@ -120,6 +121,7 @@ export default class FacebookPage extends EventEmitter {
           attachmentType == FILE_TYPE;
           attachmentUrl = message.message.attachments[0].payload.url;
         }
+        if (!attachmentType) console.log("Attachment distinto:", type);
       }
 
       let user;

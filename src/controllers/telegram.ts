@@ -112,17 +112,18 @@ export default class Telegram extends EventEmitter {
   startListener = () => {
     if (showLogs) console.log(`[Telegram - ${this.phone}] Sesión iniciada correctamente. Escuchando mensajes...`);
 
-    this.mtproto.updates.on('updates', (updateInstance: any) => {
-      updateInstance.updates.map(async (update: any) => {
-
-        if (update._ == "updateNewMessage" && update.message.out) {
-          console.log(update);
-          if (showLogs) this.logMessage(update.message);
-          let parsedMessage = await this.parseMessage(update.message);
-          this.emit("message", parsedMessage);
-          //console.log(parsedMessage);
-        }
-      })
+    this.mtproto.updates.on('updateShortMessage', async (message: any) => {
+      if (!message.out) {
+        //if (showLogs) this.logMessage(message);
+        console.log(message)
+        let parsedMessage = await this.parseMessage(message);
+        this.emit("message", parsedMessage);
+        console.log(parsedMessage);
+      }
+      /* updateInstance.updates.map(async (update: any) => {
+        console.log(update._);
+        
+      }) */
     });
   }
 
@@ -200,7 +201,7 @@ export default class Telegram extends EventEmitter {
 
       resolve({
         keyApp: this.phone + "-t",
-        userKey: data.from_id.toString(),
+        userKey: data.user_id.toString(),
         msj: {
           userName: "",
           type: "PV",
@@ -214,8 +215,6 @@ export default class Telegram extends EventEmitter {
   }
 
   sendMessage = async (message: any) => {
-    
-
     if (message && message.type == "RESPONSE_MESSAGE") {
       if (message.msj.attachmentType && message.msj.attachmentType != "" && message.msj.attachmentUrl && message.msj.attachmentUrl != "") {
         switch (message.msj.attachmentType) {
