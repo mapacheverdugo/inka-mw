@@ -102,23 +102,23 @@ export default class FacebookPage extends EventEmitter {
       if ('attachments' in message.message) {
         const type = message.message.attachments[0].type;
         if (type == "location" && GEO_TYPE) {
-          attachmentType == GEO_TYPE;
+          attachmentType = GEO_TYPE;
           attachmentUrl = `https://www.google.com/maps/place/${message.message.attachments[0].payload.coordinates.lat},${message.message.attachments[0].payload.coordinates.long}`;
         }
         if (type == "audio" && AUDIO_TYPE) {
-          attachmentType == AUDIO_TYPE;
+          attachmentType = AUDIO_TYPE;
           attachmentUrl = message.message.attachments[0].payload.url;
         }
         if (type == "video" && VIDEO_TYPE) {
-          attachmentType == VIDEO_TYPE;
+          attachmentType = VIDEO_TYPE;
           attachmentUrl = message.message.attachments[0].payload.url;
         }
         if (type == "image" && IMAGE_TYPE) {
-          attachmentType == IMAGE_TYPE;
+          attachmentType = IMAGE_TYPE;
           attachmentUrl = message.message.attachments[0].payload.url;
         }
         if (type == "file" && FILE_TYPE) {
-          attachmentType == FILE_TYPE;
+          attachmentType = FILE_TYPE;
           attachmentUrl = message.message.attachments[0].payload.url;
         }
         if (!attachmentType) console.log("Attachment distinto:", type);
