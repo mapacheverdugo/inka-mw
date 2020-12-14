@@ -91,7 +91,7 @@ export default class FacebookPage extends EventEmitter {
 
       let attachmentType;
       let attachmentUrl;
-      let mensajeTexto;
+      let mensajeTexto = "";
 
       if (this.pageId == recipient) {
 
@@ -158,20 +158,19 @@ export default class FacebookPage extends EventEmitter {
   sendMessage = async (message: any) => {
     if (message && message.type == "RESPONSE_MESSAGE") {
       if (message.msj.attachmentType && message.msj.attachmentType != "" && message.msj.attachmentUrl && message.msj.attachmentUrl != "") {
-        switch (message.attachmentType) {
-          case IMAGE_TYPE:
-            this.sendImage(message.userKey, message.msj.attachmentUrl);
-            break;
-          case AUDIO_TYPE:
-            this.sendAudio(message.userKey, message.msj.attachmentUrl);
-            break;
-          case VIDEO_TYPE:
-            this.sendVideo(message.userKey, message.msj.attachmentUrl);
-            break;
-          case FILE_TYPE:
-            this.sendVideo(message.userKey, message.msj.attachmentUrl);
-            break;
+        if (message.msj.attachmentType.startsWith(IMAGE_TYPE)) {
+          this.sendImage(message.userKey, message.msj.attachmentUrl);
         }
+        if (message.msj.attachmentType.startsWith(AUDIO_TYPE)) {
+          this.sendAudio(message.userKey, message.msj.attachmentUrl);
+        }
+        if (message.msj.attachmentType.startsWith(VIDEO_TYPE)) {
+          this.sendVideo(message.userKey, message.msj.attachmentUrl);
+        }
+          /* case FILE_TYPE:
+            this.sendVideo(message.userKey, message.msj.attachmentUrl);
+            break; */
+        
       } else {
         this.sendText(message.userKey, message.msj.mensajeTexto)
       }
