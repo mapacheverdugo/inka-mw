@@ -12,10 +12,12 @@ const showLogs = true;
 
 export default class FacebookPage extends EventEmitter {
   messenger: any;
+  appKey: string;
   pageId: any;
 
-  constructor(pageId: string | undefined, pageAccessToken: string | undefined) {
+  constructor(appKey: string, pageId: string, pageAccessToken: string | undefined) {
     super();
+    this.appKey = 
     this.messenger = new Messenger({
       pageAccessToken
     });
@@ -41,7 +43,7 @@ export default class FacebookPage extends EventEmitter {
   }
 
   startListener = () => {
-    if (showLogs) console.log(`[Facebook] Acceso correcto. Escuchando mensajes...`);
+    if (showLogs) console.log(`[Facebook - ${this.pageId}] Acceso correcto. Escuchando mensajes...`);
 
     this.messenger.on('message', async (message: any) => {
       const recipient = message.recipient.id;
@@ -67,19 +69,19 @@ export default class FacebookPage extends EventEmitter {
     if ('attachments' in message.message) {
       const type = message.message.attachments[0].type;
       if (type == "location") {
-        console.log(`[Facebook - ${recipient}] recibió una ubicación: https://www.google.com/maps/place/${message.message.attachments[0].payload.coordinates.lat},${message.message.attachments[0].payload.coordinates.long}`);
+        console.log(`[Facebook - ${this.pageId}] recibió una ubicación: https://www.google.com/maps/place/${message.message.attachments[0].payload.coordinates.lat},${message.message.attachments[0].payload.coordinates.long}`);
       } else if (type == "audio") {
-        console.log(`[Facebook - ${recipient}] recibió un audio: ${message.message.attachments[0].payload.url}`);
+        console.log(`[Facebook - ${this.pageId}] recibió un audio: ${message.message.attachments[0].payload.url}`);
       } else if (type == "video") {
-        console.log(`[Facebook - ${recipient}] recibió un video: ${message.message.attachments[0].payload.url}`);
+        console.log(`[Facebook - ${this.pageId}] recibió un video: ${message.message.attachments[0].payload.url}`);
       } else if (type == "image") {
-        console.log(`[Facebook - ${recipient}] recibió una imagen: ${message.message.attachments[0].payload.url}`);
+        console.log(`[Facebook - ${this.pageId}] recibió una imagen: ${message.message.attachments[0].payload.url}`);
       } else if (type == "file") {
-        console.log(`[Facebook - ${recipient}] recibió un archivo: ${message.message.attachments[0].payload.url}`);
+        console.log(`[Facebook - ${this.pageId}] recibió un archivo: ${message.message.attachments[0].payload.url}`);
       } 
   
     } else if ('text' in message.message) {
-      console.log(`[Facebook - ${recipient}] recibió: "${message.message.text}"`);
+      console.log(`[Facebook - ${this.pageId}] recibió: "${message.message.text}"`);
     }
   }
   }
@@ -121,7 +123,7 @@ export default class FacebookPage extends EventEmitter {
           attachmentType = FILE_TYPE;
           attachmentUrl = message.message.attachments[0].payload.url;
         }
-        if (!attachmentType) console.log("Attachment distinto:", type);
+        if (!attachmentType) console.log(`[Facebook - ${this.pageId}] Attachment distinto:`, type);
       }
 
       let user;
@@ -132,12 +134,12 @@ export default class FacebookPage extends EventEmitter {
           'last_name'
         ])
       } catch (error) {
-        if (showLogs) console.log("Error obteniendo user:", error);
+        if (showLogs) console.log(`[Facebook - ${this.pageId}] Error obteniendo el usuario:`, error);
       }
 
 
       resolve({
-        keyApp: recipient,
+        keyApp: this.appKey,
         userKey: sender,
         msj: {
           userName: user ? `${user.first_name} ${user.last_name}` : "NN",
@@ -171,7 +173,9 @@ export default class FacebookPage extends EventEmitter {
             this.sendVideo(message.userKey, message.msj.attachmentUrl);
             break; */
         
-      } else {
+      }
+      
+      if (message.msj.mensajeTexto && message.msj.mensajeTexto != "") {
         this.sendText(message.userKey, message.msj.mensajeTexto)
       }
     }

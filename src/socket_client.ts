@@ -26,11 +26,13 @@ export default class SocketClient extends EventEmitter{
         console.log("Enviado:", message)
         this.client.end();
   
-        this.client.on("error", (err) => {
-          console.log("Error mandandao mensaje: ", err);
-          this.client.end();
-        })
+        
       });
+
+      this.client.on("error", (err) => {
+        console.log("Error al conectarse al Core: ", err);
+        this.client.end();
+      })
     } 
       
     }

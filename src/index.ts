@@ -21,21 +21,21 @@ const sendToUser = (message: any) => {
 
   if (!founded) {
     for (const ig of igs) {
-      if (ig.user == message.keyApp)
+      if (ig.appKey == message.keyApp)
         founded = ig;
     }
   }
 
   if (!founded) {
     for (const fb of fbs) {
-      if (fb.pageId == message.keyApp)
+      if (fb.appKey == message.keyApp)
         founded = fb;
     }
   }
 
   if (!founded) {
     for (const tg of tgs) {
-      if (tg.phone + "-t" == message.keyApp)
+      if (tg.appKey == message.keyApp)
         founded = tg;
     }
   }
@@ -47,18 +47,36 @@ const sendToUser = (message: any) => {
 const getRows = async () => {
   return new Promise<any[]>(async (resolve, reject) => {
     pool.query('SELECT NOW()', (err, res) => {
-      pool.end()
+      if (err) reject(new Error("No se pudo establecer conección con la base de datos"));
+      pool.end();
     });
 
-    const res = await pool.query('SELECT * FROM inka_app WHERE app_activo = 1');
-    let rows = res.rows;
-    resolve(rows);
+    try {
+      const res = await pool.query('SELECT * FROM inka_app WHERE app_activo = 1');
+      let rows = res.rows;
+      resolve(rows);
+    } catch (error) {
+      reject(new Error("No se pudieron obtener las redes sociales desde la base de datos"));
+    }
   });
 }
 
 const main = async () => {
   try {
     const expressServer = new ExpressServer();
+
+    expressServer.on("telegramCode", (data) => {
+      const {appKey, phone, code} = data;
+      console.log("telegramCode", appKey, phone, code);
+
+      let founded;
+      for (const tg of tgs) {
+        if (tg.appKey == appKey)
+          founded = tg;
+      }
+      
+    })
+
     if (process.env.INSTAGRAM_PORT) {
       const instagramSocket = new SockerServer(parseInt(process.env.INSTAGRAM_PORT));
       instagramSocket.on("message", (message) => {
@@ -80,61 +98,61 @@ const main = async () => {
       });
     }
 
-    const rows = await getRows();
-
-    for (const row of rows) {
-      if (row.app_name.toLowerCase().trim() == process.env.INSTAGRAM_VALUE?.toLowerCase().trim()) {
-        try {
+      const rows = await getRows();
+      for (const row of rows) {
+        if (row.app_name.toLowerCase().trim() == process.env.INSTAGRAM_VALUE?.toLowerCase().trim()) {
+          try {
+            const appKey = row.app_data1.trim();
+            const user = row.app_data2.trim();
+            const password = row.app_data3.trim();
+            let ig = new Instagram(appKey, user, password);
+            ig.init();
+            ig.on("message", (message: any) => {
+              const socketClient = new SocketClient();
+              socketClient.write(message);
+              ig.sendMessage(message);
+            });
+            igs.push(ig);
+          } catch (error) {
+            console.log(error);
+          }
+          
+        }
+  
+        if (row.app_name.toLowerCase().trim() == process.env.FACEBOOK_VALUE?.toLowerCase().trim()) {
           const appKey = row.app_data1.trim();
-          const user = row.app_data2.trim();
-          const password = row.app_data3.trim();
-          let ig = new Instagram(user, password);
-          ig.init();
-          ig.on("message", (message: any) => {
+          const pageId = row.app_data2.trim();
+          const accessToken = row.app_data3.trim();
+          let fb = new Facebook(appKey, pageId, accessToken);
+          fb.init();
+          expressServer.on("facebookWebhook", (data) => {
+            fb.handle(data);
+          })
+          fb.on("message", (message: any) => {
             const socketClient = new SocketClient();
             socketClient.write(message);
           });
-          igs.push(ig);
-        } catch (error) {
-          console.log(error);
+          fbs.push(fb);
         }
-        
+  
+        if (row.app_name.toLowerCase().trim() == process.env.TELEGRAM_VALUE?.toLowerCase().trim()) {
+          const appKey = row.app_data1.trim();
+          const phone = row.app_data2.trim();
+          const apiId = row.app_data3.trim();
+          const apiHash = row.app_data4.trim();
+          let tg = new Telegram(appKey, phone, apiId, apiHash);
+          tg.on("message", (message: any) => {
+            const socketClient = new SocketClient();
+            socketClient.write(message);
+            tg.sendMessage(message)
+          });
+          await tg.init();
+          
+          tgs.push(tg);
+        }
       }
-
-      if (row.app_name.toLowerCase().trim() == process.env.FACEBOOK_VALUE?.toLowerCase().trim()) {
-        const appKey = row.app_data1.trim();
-        const pageId = row.app_data2.trim();
-        const accessToken = row.app_data3.trim();
-        let fb = new Facebook(pageId, accessToken);
-        fb.init();
-        expressServer.on("facebookWebhook", (data) => {
-          fb.handle(data);
-        })
-        fb.on("message", (message: any) => {
-          const socketClient = new SocketClient();
-          socketClient.write(message);
-        });
-        fbs.push(fb);
-      }
-
-      if (row.app_name.toLowerCase().trim() == process.env.TELEGRAM_VALUE?.toLowerCase().trim()) {
-        const appKey = row.app_data1.trim();
-        const phone = row.app_data2.trim();
-        let tg = new Telegram(phone);
-        tg.on("message", (message: any) => {
-          const socketClient = new SocketClient();
-          socketClient.write(message);
-          tg.sendMessage(message)
-        });
-        tg.init();
-        
-        tgs.push(tg);
-      }
-    }
-    
   } catch (error) {
-    console.error("Error:", error);
-    await pool.end();
+    console.error(error);
   }
 }
 

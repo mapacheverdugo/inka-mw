@@ -3,12 +3,28 @@ import express from 'express';
 import crypto from 'crypto';
 import bodyParser from 'body-parser';
 
+const fs = require('fs');
+const http = require('http');
+const https = require('https');
+
+var privateKey: any;
+var certificate: any;
+
+
 export default class ExpressServer extends EventEmitter {
 
   app = express();
+  httpServer: any;
+  httpsServer: any;
 
   constructor() {
     super();
+
+    if (process.env.PRIVATE_KEY_PATH && process.env.CERTIFICATE_PATH) {
+      privateKey  = fs.readFileSync(process.env.PRIVATE_KEY_PATH, 'utf8');
+      certificate = fs.readFileSync(process.env.CERTIFICATE_PATH, 'utf8');
+    }
+
     this.app.use(bodyParser.json({ verify: this.verifyFacebookRequestSignature }));
     this.app.use(bodyParser.urlencoded({ extended: true }));
     
@@ -27,12 +43,27 @@ export default class ExpressServer extends EventEmitter {
       this.emit("facebookWebhook", req.body);
       
     });
-    
-    this.app.listen(process.env.PORT || 3000, async () => {
-      console.log(`Servidor HTTP corriendo en el puerto ${process.env.PORT || 3000}`);
+
+    this.app.post('/telegram', (req: any, res: any) => {
       
+      console.log(req.body);
+      res.sendStatus(200);
+      this.emit("telegramCode", req.body);
       
     });
+    
+    if (privateKey && certificate) {
+      let credentials = {key: privateKey, cert: certificate};
+      this.httpsServer = https.createServer(credentials, this.app);
+      this.httpsServer.listen(process.env.PORT || 3000, async () => {
+        console.log(`Servidor HTTPS corriendo en el puerto ${process.env.PORT || 3000}`);
+      });
+    } else {
+      this.httpServer = http.createServer(this.app); 
+      this.httpServer.listen(process.env.PORT || 3000, async () => {
+        console.log(`Servidor HTTP corriendo en el puerto ${process.env.PORT || 3000}`);
+      });
+    }
   }
 
   verifyFacebookRequestSignature = (req: any, res: any, buf: any) => {
