@@ -7,11 +7,12 @@ const request = require('request');
 import { promisify } from "util";
 import { readFile } from "fs";
 import {
-    withRealtime,
+    withFbnsAndRealtime,
     GraphQLSubscriptions,
     SkywalkerSubscriptions,
     IgApiClientRealtime,
-    MessageSyncMessageWrapper
+    MessageSyncMessageWrapper,
+    IgApiClientMQTT
 } from 'instagram_mqtt';
 import { IgApiClient, DirectThreadEntity } from "instagram-private-api";
  
@@ -27,7 +28,7 @@ export default class Instagram extends EventEmitter {
   appKey: string;
   user: string;
   pass: string;
-  ig: IgApiClientRealtime = withRealtime(new IgApiClient());
+  ig: IgApiClientMQTT = withFbnsAndRealtime(new IgApiClient());
 
   constructor(appKey: string, user: string, pass: string) {
     super();
@@ -38,6 +39,7 @@ export default class Instagram extends EventEmitter {
   }
   
   init = async () => {
+    
     try {
       await this.login();      
 
@@ -85,13 +87,21 @@ export default class Instagram extends EventEmitter {
 
     let userId = await this.ig.user.getIdByUsername(this.user);
 
-      this.ig.realtime.on('receive', async (topic, messages) => {
+      /* this.ig.realtime.on('receive', async (topic, messages) => {
         console.log('receive', topic, messages);
       });
 
-      this.ig.realtime.on('direct', async (direct) => {
+      this.ig.realtime.on('direct', assync (direct) => {
         console.log('direct', direct);
       });
+
+      this.ig.realtime.on('iris', async (data) => {
+        console.log('iris', data);
+      });
+
+      this.ig.fbns.on('push', async (data) => {s
+        console.log('push', data);
+      }); */
 
       this.ig.realtime.on('message', async (data) => {
         let isSelfMessage = userId == data.message.user_id;
@@ -103,6 +113,7 @@ export default class Instagram extends EventEmitter {
             this.emit('message', parsedMessage);
             //console.log(parsedMessage);
           } else {
+            console.log(data)
             if (showLogs) console.log(`[Instagram - @${this.user}] DEBUG: La operacion era otra:`, data.message.op);
           }
         }
@@ -138,9 +149,20 @@ export default class Instagram extends EventEmitter {
   parseMessage = (data: MessageSyncMessageWrapper) => {
     return new Promise(async (resolve, reject) => {
       let mensajeTexto = "";
-      let attachmentType;
-      let attachmentUrl;
-      let userInfo = await this.ig.user.info(data.message.user_id.toString());
+      let attachmentType = "";
+      let attachmentUrl = "";
+      let userName = "";
+
+      try {
+        let userInfo = await this.ig.user.info(data.message.user_id.toString());
+        if (userInfo.username && userInfo.username != "") {
+          userName = userInfo.username;
+        }
+      } catch (error) {
+        console.log(`[Instagram - @${this.user}] ERROR:`, error);
+        userName = data.message.user_id.toString();
+      }
+
       
       if (data.message.item_type == "text") {
         mensajeTexto = data.message.text ? data.message.text : "";
@@ -148,32 +170,32 @@ export default class Instagram extends EventEmitter {
         if (data.message.media?.media_type == 1) {
           if (IMAGE_TYPE) { 
             attachmentType = IMAGE_TYPE;
-            attachmentUrl = data.message.media?.image_versions2?.candidates[0].url;
+            attachmentUrl = data.message.media?.image_versions2?.candidates[0].url || "";
           }
         } else {
           if (VIDEO_TYPE) { 
             attachmentType = VIDEO_TYPE;
-            attachmentUrl = data.message.media?.video_versions?.[0].url;
+            attachmentUrl = data.message.media?.video_versions?.[0].url || "";
           }
         }
       } else if (data.message.item_type == "voice_media" && AUDIO_TYPE) {
         attachmentType = AUDIO_TYPE;
-        attachmentUrl = data.message.voice_media?.media.audio.audio_src;
+        attachmentUrl = data.message.voice_media?.media.audio.audio_src || "";
       } else if (data.message.item_type == "like") {
         mensajeTexto = '❤️';
       } else if (data.message.item_type == "animated_media" && IMAGE_TYPE) {
         attachmentType = IMAGE_TYPE;
-        attachmentUrl = data.message.animated_media?.images.fixed_height?.url;
+        attachmentUrl = data.message.animated_media?.images.fixed_height?.url || "";
       } else if (data.message.item_type == "raven_media") {
         if (data.message.visual_media?.media?.media_type == 1) {
           if (IMAGE_TYPE) { 
             attachmentType = IMAGE_TYPE;
-            attachmentUrl = data.message.visual_media?.media?.image_versions2?.candidates[0].url;
+            attachmentUrl = data.message.visual_media?.media?.image_versions2?.candidates[0].url || "";
           }
         } else { 
           if (VIDEO_TYPE) { 
             attachmentType = VIDEO_TYPE;
-            attachmentUrl = data.message.visual_media?.media?.video_versions?.[1].url;
+            attachmentUrl = data.message.visual_media?.media?.video_versions?.[1].url || "";
           }
         }
       }
@@ -182,7 +204,7 @@ export default class Instagram extends EventEmitter {
         keyApp: this.appKey,
         userKey: data.message.thread_id,
         msj: {
-          userName: userInfo.username,
+          userName,
           type: "PV",
           attachmentType,
           attachmentUrl,

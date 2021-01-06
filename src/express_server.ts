@@ -28,6 +28,11 @@ export default class ExpressServer extends EventEmitter {
     this.app.use(bodyParser.json({ verify: this.verifyFacebookRequestSignature }));
     this.app.use(bodyParser.urlencoded({ extended: true }));
     
+    this.app.get('/', (req: any, res: any) => {
+      res.status(200).json({
+        message: "API REST funcionando correctamente"
+      });
+    });
     
     this.app.get('/webhook', (req: any, res: any) => {
       if (req.query['hub.mode'] === 'subscribe' &&

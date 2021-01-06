@@ -2,29 +2,32 @@ require('dotenv').config()
 
 import { EventEmitter } from "events";
 import { LocalStorage } from "node-localstorage";
-const { sleep } = require('@mtproto/core/src/utils/common');
+import { LocalFileSystem, SftpFileSystem, FtpFileSystem } from "ftp-sftp";
+import { Readable } from "stream";
+const toReadableStream = require('to-readable-stream');
 
 const { MTProto, getSRPParams } = require('@mtproto/core');
 const prompts = require('prompts'); 
-const Client = require('ftp');
-const fs = require('fs');
+const Client = require('ssh2-sftp-client');
+const fs = require('fs'); 
 
 const IMAGE_TYPE = "image";
 const VIDEO_TYPE = "video";
 const AUDIO_TYPE = "audio";
-const FILE_TYPE = "file";
-const GEO_TYPE = "geo";
+const FILE_TYPE = null;
+const GEO_TYPE = null;
 const CONTACT_TYPE = null;
 
 const showLogs = true;
 
-export default class Telegram extends EventEmitter {
 
+export default class Telegram extends EventEmitter {
   mtproto: typeof MTProto;
   apiId: string;
   apiHash: string;
   phone: string;
-  appKey: string
+  appKey: string;
+  accessHash: string | undefined;
 
   constructor(appKey: string, phone: string, apiId: string, apiHash: string) {
     super();
@@ -32,6 +35,7 @@ export default class Telegram extends EventEmitter {
     this.phone = phone.replace("+", "");;
     this.apiId = apiId;
     this.apiHash = apiHash;
+    
     this.mtproto = new MTProto({
       api_id: this.apiId,
       api_hash: this.apiHash,
@@ -42,14 +46,16 @@ export default class Telegram extends EventEmitter {
   init = () => {
     return new Promise(async (resolve, reject) => {
       try {
-        let result = await this.mtproto.call('users.getFullUser', {
+        let userFull = await this.mtproto.call('users.getFullUser', {
           id: {
             _: 'inputUserSelf',
           },
         });
 
-        if (result.user.phone != this.phone) {
-          console.log("Numeros no coinciden", result.user.phone, this.phone)
+        this.accessHash = userFull.user.access_hash;
+
+        if (userFull.user.phone != this.phone) {
+          console.log("Numeros no coinciden", userFull.user.phone, this.phone)
           throw Error("Numeros no coinciden");
         } else {
           this.startListener();
@@ -156,20 +162,13 @@ export default class Telegram extends EventEmitter {
     })).code
   }
 
-  getPassword = async () => {
-    return (await prompts({
-        type: 'text',
-        name: 'password',
-        message: `[Telegram - +${this.phone}] Ingresa la contraseña:`,
-    })).password
-  }
-
   startListener = () => {
     if (showLogs) console.log(`[Telegram - +${this.phone}] Sesión iniciada correctamente. Escuchando mensajes...`);
 
-    this.mtproto.updates.on('updates', async (updateInstance: any) => {
+    /* this.mtproto.updates.on('updates', async (updateInstance: any) => {
       updateInstance.updates.map(async (update: any) => {
         if (update._ == "updateNewMessage" && update.message && !update.message.out) {
+          console.log(update);
           let parsedMessage = await this.parseMessage(update.message);
           
           console.log(parsedMessage)
@@ -184,14 +183,53 @@ export default class Telegram extends EventEmitter {
       if (!message.out) {
         //if (showLogs) this.logMessage(message);
         let parsedMessage = await this.parseMessage(message);
-        console.log(parsedMessage)
+        console.log(message)
         this.emit("message", parsedMessage);
       }
-      /* updateInstance.updates.map(async (update: any) => {
-        console.log(update._);
-        
-      }) */
-    });
+    }); */
+
+    
+
+    /* this.mtproto.updates.on('updateShort', async (data: any) => {
+      console.log("updateShort", data)
+    }) */
+
+    this.mtproto.updates.on('updateShortMessage', async (data: any) => {
+      console.log("updateShortMessage", data)
+      console.log("accessHash", this.accessHash)
+      let result = await this.call("users.getFullUser", {
+        id: {
+          _: "inputUserFromMessage",
+          peer: {
+            _: "inputPeerUser",
+            user_id: data.user_id,
+            access_hash: this.accessHash
+          },
+          msg_id: data.id,
+          user_id: data.user_id,
+        },
+      });
+      console.log("messages.getAllChats", result)
+    })
+
+    
+    /* this.mtproto.updates.on('updateShortChatMessage', async (data: any) => {
+      console.log("updateShortChatMessage", data)
+    })
+
+    this.mtproto.updates.on('updatesCombined', async (data: any) => {
+      console.log("updatesCombined", data)
+    })
+
+    this.mtproto.updates.on('updatesTooLong', async (data: any) => {
+      console.log("updatesTooLong", data)
+    })
+
+    this.mtproto.updates.on('updates', async (data: any) => {
+      console.log("updates", data)
+    }) */
+
+    
   }
 
   logMessage = (data: any) => {
@@ -231,90 +269,183 @@ export default class Telegram extends EventEmitter {
     
   }
 
-  uploadFile = (id: string, file: Buffer) => {
-    return new Promise((resolve, reject) => {
-      let c = new Client();
-      console.log("uploadFile")
-      c.on('ready', () => {
-        console.log("ready")
-        c.put(file, `${process.env.FTP_PATH}/${id}`, (err: any) => {
-          console.log("put")
-          if (err) reject(err);
-          c.end();
-          resolve(null)
-        });
-      });
+  uploadFile = (fileName: string, file: Uint8Array) => {
+    return new Promise<string>(async (resolve, reject) => {
+      try {
+        let remoteFs;
+        let localFs = new LocalFileSystem();
 
-      c.on('error', (err: any) => {
-        console.log("error", err)
-        
-      });
+        fs.appendFile("../temp", Buffer.from(file), (err: any) => {
+          if (err) {
+            console.log(err);
+          } else {
+            console.log("todo bien")
+          }
+        });
       
-      c.connect({
-        host: process.env.FTP_HOST,
-        port: process.env.FTP_PORT,
-        user: process.env.FTP_USER,
-        password: process.env.FTP_PASSWORD
-      });
+        if (process.env.FTP_HOST && process.env.FTP_PORT && process.env.FTP_USER && process.env.FTP_PASSWORD) {
+          if (process.env.FTP_TYPE && process.env.FTP_TYPE == "sftp") {
+            remoteFs = await SftpFileSystem.create(process.env.FTP_HOST, parseInt(process.env.FTP_PORT), process.env.FTP_USER, process.env.FTP_PASSWORD);
+          } else {
+            remoteFs = await FtpFileSystem.create(process.env.FTP_HOST, parseInt(process.env.FTP_PORT), process.env.FTP_USER, process.env.FTP_PASSWORD);
+          }
+
+          let result = await remoteFs.put(toReadableStream(file), `${process.env.FTP_PATH}/${fileName}`);
+          resolve(process.env.FTP_URL + "/" + fileName);
+        } else {
+          reject(new Error("No hay servidor FTP/SFTP configurado"));
+        }
+      } catch (error) {
+        reject(error);
+      }
+      
     });
   }
 
   parseMessage = (data: any) => {
     return new Promise(async (resolve, reject) => {
-      let attachmentType;
-      let attachmentUrl;
-      let userKey;
+      let attachmentType = "";
+      let attachmentUrl = "";
+      let userKey = "";
+      let userName = "";
+
 
       if (data._ == "updateShortMessage") {
         userKey = data.user_id.toString();
       } else if (data._ == "message") {
         userKey = data.peer_id.user_id.toString();
         if (data.media) {
-          
-
           if (data.media._ == "messageMediaPhoto" && IMAGE_TYPE) {
             attachmentType = IMAGE_TYPE;
-            attachmentUrl = data.media.photo.id;
             try {
-              this.uploadFile(data.media.photo.id, data.media.photo.file_reference);
+              attachmentUrl = await this.uploadFile(`${data.media.photo.id}.jpg`, data.media.photo.file_reference);
             } catch (error) {
               console.log(error);
             }
           } else if (data.media._ == "messageMediaDocument") {
             if (data.media.document.mime_type.startsWith("image") && IMAGE_TYPE) {
               attachmentType = IMAGE_TYPE;
-              attachmentUrl = data.media.document.id;
+              try {
+                attachmentUrl = await this.uploadFile(`${data.media.photo.id}.${data.media.document.mime_type.replace("image/")}`, data.media.photo.file_reference);
+              } catch (error) {
+                console.log(error);
+              }
             } else if (data.media.document.mime_type.startsWith("video") && VIDEO_TYPE) {
               attachmentType = VIDEO_TYPE;
-              attachmentUrl = data.media.document.id;
+              try {
+                attachmentUrl = await this.uploadFile(`${data.media.document.id}.${data.media.document.mime_type.replace("video/")}`, data.media.photo.file_reference);
+              } catch (error) {
+                console.log(error);
+              }
             } else if (data.media.document.mime_type.startsWith("audio") && AUDIO_TYPE) {
               attachmentType = AUDIO_TYPE;
-              attachmentUrl = data.media.document.id;
+              try {
+                attachmentUrl = await this.uploadFile(`${data.media.document.id}.${data.media.document.mime_type.replace("audio/")}`, data.media.photo.file_reference);
+              } catch (error) {
+                console.log(error);
+              }
             } else if (data.media.document.mime_type.startsWith("application/x-tgsticker") && IMAGE_TYPE) {
               attachmentType = IMAGE_TYPE;
-              attachmentUrl = data.media.document.id;
+              try {
+                attachmentUrl = await this.uploadFile(`${data.media.document.id}.gif`, data.media.photo.file_reference);
+              } catch (error) {
+                console.log(error);
+              }
             } else if (data.media.document.mime_type.startsWith("application") && FILE_TYPE) {
-              attachmentType = FILE_TYPE;
+              attachmentType = FILE_TYPE || "";
               attachmentUrl = data.media.document.id;
             }
           } else if (data.media._ == "messageMediaGeo" && GEO_TYPE) {
-            attachmentType = GEO_TYPE;
+            attachmentType = GEO_TYPE || "";
             attachmentUrl = `https://www.google.com/maps/place/${data.media.geo.lat},${data.media.geo.long}`;
           } else if (data.media._ == "messageMediaGeoLive" && GEO_TYPE) {
-            attachmentType = GEO_TYPE;
+            attachmentType = GEO_TYPE || "";
             attachmentUrl = `https://www.google.com/maps/place/${data.media.geo.lat},${data.media.geo.long}`;
           } else if (data.media._ == "messageMediaContact" && CONTACT_TYPE) {
-            attachmentType = CONTACT_TYPE;
+            attachmentType = CONTACT_TYPE || "";
             attachmentUrl = data.media.phone_number;
           }
         }
+      }
+
+      try {
+        let result: any = await this.call('users.getFullUser', {
+          id: {
+            _: "inputUserFromMessage",
+            peer: {
+              _: "inputPeerUserFromMessage",
+              msg_id: data.id,
+              user_id: userKey,
+            },
+            msg_id: data.id,
+            user_id: userKey,
+          },
+        });
+
+        const user = result.user;
+
+        console.log("user", user);
+
+        if (user.first_name && user.first_name != "") {
+          userName += user.first_name;
+          if (user.last_name && user.last_name != "") {
+            userName += " "
+          }
+        }
+        if (user.last_name && user.last_name != "") {
+          userName += user.last_name;
+        }
+
+        if (!userName || userName == "") {
+          if (user.phone && user.phone != "") {
+
+            userName = user.phone;
+          } else {
+            userName = userKey;
+          }
+        }
+
+        console.log(userName)
+      } catch (error) {
+        console.error(`[Telegram - +${this.phone}] ERROR:`, error)
+
+        try {
+          let result2: any = await this.call('contacts.addContact', {
+            id: {
+              _: "inputUserFromMessage",
+              flags: "min",
+              peer: {
+                _: "inputPeerUser",
+                user_id: userKey,
+              },
+              msg_id: data.id,
+              user_id: userKey,
+            },
+            first_name: "Desde",
+            last_name: "Node"
+          });
+
+          let result: any = await this.call('users.getFullUser', {
+            id: {
+              _: "inputUser",
+              user_id: userKey
+            },
+          });
+  
+          const user = result.user;
+  
+          console.log("user", user);
+        } catch (e) {
+          console.log("ERROR contacts.acceptContact", e)
+        }
+        userName = userKey;
       }
 
       resolve({
         keyApp: this.appKey,
         userKey,
         msj: {
-          userName: "",
+          userName,
           type: "PV",
           attachmentType,
           attachmentUrl,
@@ -324,26 +455,24 @@ export default class Telegram extends EventEmitter {
       });
     })
   }
+  
 
   sendMessage = async (message: any) => {
     return new Promise(async (resolve, reject) => {
       try {
-        console.log("sendMessage", message)
         if (message && message.type == "RESPONSE_MESSAGE") {
         if (message.msj.attachmentType && message.msj.attachmentType != "" && message.msj.attachmentUrl && message.msj.attachmentUrl != "") {
-          switch (message.msj.attachmentType) {
-            case IMAGE_TYPE:
-              await this.sendPhoto(message.msj.mensajeTexto, message.msj.attachmentUrl)
-              break;
-            case AUDIO_TYPE:
-              await this.sendDocument(message.msj.mensajeTexto, message.msj.attachmentUrl)
-              break;
-            case VIDEO_TYPE:
-              await this.sendDocument(message.msj.mensajeTexto, message.msj.attachmentUrl)
-              break;
+          if (message.msj.attachmentType.startsWith(IMAGE_TYPE)) {
+            this.sendPhoto(message.userKey, message.msj.mensajeTexto, message.msj.attachmentUrl);
+          }
+          if (message.msj.attachmentType.startsWith(AUDIO_TYPE)) {
+            this.sendDocument(message.userKey, message.msj.mensajeTexto, message.msj.attachmentUrl);
+          }
+          if (message.msj.attachmentType.startsWith(VIDEO_TYPE)) {
+            this.sendDocument(message.userKey, message.msj.mensajeTexto, message.msj.attachmentUrl);
           }
         } else {
-          await this.sendMessage(message.msj.mensajeTexto);
+          await this.sendText(message.userKey, message.msj.mensajeTexto);
         }
       }
       
@@ -357,11 +486,12 @@ export default class Telegram extends EventEmitter {
 
   sendText = (userId: string, text: string) => {
     return new Promise(async (resolve, reject) => {
+      let newUserId = parseInt(userId);
       let result = await this.call("messages.sendMessage", {
         message: text,
         peer: {
           _: "inputPeerUser",
-          user_id: userId,
+          user_id: newUserId,
         },
         random_id: Math.floor(Math.random() * 1000000000)
       });
@@ -369,13 +499,14 @@ export default class Telegram extends EventEmitter {
     });
   }
 
-  sendPhoto = (text: string, url: string) => {
+  sendPhoto = (userId: string, text: string, url: string) => {
     return new Promise(async (resolve, reject) => {
+      let newUserId = parseInt(userId);
       let result = await this.call("messages.sendMedia", {
         message: text,
         peer: {
           _: "inputPeerUser",
-          user_id: 777000,
+          user_id: newUserId,
         },
         random_id: Math.floor(Math.random() * 1000000000),
         media: {
@@ -388,13 +519,14 @@ export default class Telegram extends EventEmitter {
     });
   }
 
-  sendDocument = (text: string, url: string) => {
+  sendDocument = (userId: string, text: string, url: string) => {
     return new Promise(async (resolve, reject) => {
+      let newUserId = parseInt(userId);
       let result = await this.call("messages.sendMedia", {
         message: text,
         peer: {
           _: "inputPeerUser",
-          user_id: 777000,
+          user_id: newUserId,
         },
         random_id: Math.floor(Math.random() * 1000000000),
         media: {

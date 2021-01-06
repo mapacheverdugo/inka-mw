@@ -110,7 +110,6 @@ const main = async () => {
             ig.on("message", (message: any) => {
               const socketClient = new SocketClient();
               socketClient.write(message);
-              ig.sendMessage(message);
             });
             igs.push(ig);
           } catch (error) {
@@ -144,7 +143,6 @@ const main = async () => {
           tg.on("message", (message: any) => {
             const socketClient = new SocketClient();
             socketClient.write(message);
-            tg.sendMessage(message)
           });
           await tg.init();
           

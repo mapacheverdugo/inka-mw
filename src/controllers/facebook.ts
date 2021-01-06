@@ -5,8 +5,8 @@ const { Messenger, Text, Audio, Video, Image, File } = require('fbmessenger');
 const IMAGE_TYPE = "image";
 const VIDEO_TYPE = "video";
 const AUDIO_TYPE = "audio";
-const FILE_TYPE = "file";
-const GEO_TYPE = "geo";
+const FILE_TYPE = null;
+const GEO_TYPE = null;
 
 const showLogs = true;
 
@@ -17,7 +17,7 @@ export default class FacebookPage extends EventEmitter {
 
   constructor(appKey: string, pageId: string, pageAccessToken: string | undefined) {
     super();
-    this.appKey = 
+    this.appKey = appKey;
     this.messenger = new Messenger({
       pageAccessToken
     });
