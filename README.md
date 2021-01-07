@@ -1,8 +1,3 @@
-<<<<<<< HEAD
-# inka-mw
-
-Midelware para la conexion a RRSS hacia y desde el inka-core, atenderá Facebook,Instagram y Telegram.
-=======
 # Inka Middleware
 
 Software encargado de conectar distintas redes sociales, como Instagram y Facebook con el fin de unificarlas en un mismo chat de servicio al cliente en el proyecto core de Inka.
@@ -131,4 +126,3 @@ Además de una página, se necesita tener una **aplicación** de Facebook. En ca
 | `app_data3` | Token de acceso de la página. Ej: `3gja70#2df` |
 
  
->>>>>>> 3baac74bb2e7ec5bab7a780e8630dfb5916baaa0
