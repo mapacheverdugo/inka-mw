@@ -11,19 +11,16 @@ Software encargado de conectar distintas redes sociales, como Instagram y Facebo
 ### 1.2. Variables de entorno
 Las variables de entorno se modifican en un archivo `.env` ubicado en la raíz del proyecto.
 ```
-CORE_HOST=123.12.123.123
 CORE_PORT=9090
 
 PORT=3000
 
-INSTAGRAM_VALUE=Instagram
-INSTAGRAM_PORT=9021
-
 FACEBOOK_VALUE=Facebook
-FACEBOOK_PORT=9022
+FACEBOOK_PORT=9021
 
-FACEBOOK_VERIFY_TOKEN=inkaapp
-FACEBOOK_APP_SECRET=3fda343dbe9581d0792e
+INSTAGRAM_VALUE=Instagram
+INSTAGRAM_PORT=9022
+INSTAGRAM_SEC_INTERVAL=30
 
 PGUSER=aware
 PGHOST=123.12.123.123
