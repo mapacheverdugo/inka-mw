@@ -5,18 +5,19 @@ import { EventEmitter } from 'events';
 import Net from 'net';
 
 export default class SocketClient extends EventEmitter{
+  host: string;
   client = new Net.Socket();
 
-  constructor() {
+  constructor(host: string) {
     super();
-    
+    this.host = host;
   }
 
   write = (message: any) => {
-    if (process.env.CORE_HOST && process.env.CORE_PORT) {
+    if (this.host && process.env.CORE_PORT) {
       this.client.connect({ 
         port: parseInt(process.env.CORE_PORT),
-        host: process.env.CORE_HOST
+        host: this.host
       });
   
       this.client.on('connect', async () => {

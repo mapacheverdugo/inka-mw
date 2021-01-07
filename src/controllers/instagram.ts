@@ -10,11 +10,10 @@ import {
     withFbnsAndRealtime,
     GraphQLSubscriptions,
     SkywalkerSubscriptions,
-    IgApiClientRealtime,
-    MessageSyncMessageWrapper,
+    MessageSyncMessage,
     IgApiClientMQTT
 } from 'instagram_mqtt';
-import { IgApiClient, DirectThreadEntity } from "instagram-private-api";
+import { IgApiClient, DirectThreadEntity, DirectInboxFeedResponseItemsItem } from "instagram-private-api";
  
 const readFileAsync = promisify(readFile);
 
@@ -41,7 +40,9 @@ export default class Instagram extends EventEmitter {
   init = async () => {
     
     try {
-      await this.login();      
+      await this.login();
+      
+      
 
       await this.ig.realtime.connect({
         graphQlSubs: [
@@ -57,6 +58,7 @@ export default class Instagram extends EventEmitter {
         irisData: await this.ig.feed.directInbox().request(),
         connectOverrides: {},
       });
+      this.startListenAndAprovePendings();
       this.startListener();
     } catch (error) {
       console.error(`[Instagram - @${this.user}]`, "ERROR:", error);
@@ -82,127 +84,133 @@ export default class Instagram extends EventEmitter {
     });
   }
 
+  startListenAndAprovePendings = () => {
+    let secs = process.env.INSTAGRAM_SEC_INTERVAL ? parseInt(process.env.INSTAGRAM_SEC_INTERVAL) : 30
+    let interval = secs * 1000;
+
+    setInterval(async () => {
+      //if (showLogs) console.log(`[Instagram - @${this.user}] Obteniendo solicitudes de mensaje...`);
+
+      const pendings = await this.ig.feed.directPending().items();
+
+      if (pendings.length > 0) {
+        if (showLogs) console.log(`[Instagram - @${this.user}] Se encontraron ${pendings.length} solicitudes de mensajes que se aprobaran.`);
+      }
+
+      for (const pending of pendings) {
+        await this.ig.directThread.approve(pending.thread_id);
+
+        for (const item of pending.items) {
+          if (showLogs) this.logMessage(item);
+          let parsedMessage = await this.parseMessage(item, pending.thread_id)
+          this.emit('message', parsedMessage);
+        }
+      }
+    }, interval);
+  }
+
   startListener = async () => {
     if (showLogs) console.log(`[Instagram - @${this.user}] Sesión iniciada correctamente. Escuchando mensajes...`);
 
     let userId = await this.ig.user.getIdByUsername(this.user);
 
-      /* this.ig.realtime.on('receive', async (topic, messages) => {
-        console.log('receive', topic, messages);
-      });
-
-      this.ig.realtime.on('direct', assync (direct) => {
-        console.log('direct', direct);
-      });
-
-      this.ig.realtime.on('iris', async (data) => {
-        console.log('iris', data);
-      });
-
-      this.ig.fbns.on('push', async (data) => {s
-        console.log('push', data);
-      }); */
-
-      this.ig.realtime.on('message', async (data) => {
-        let isSelfMessage = userId == data.message.user_id;
-        if (!isSelfMessage) {
-          if (data.message.op == 'add') {
-            if (showLogs) this.logMessage(data);
-            let parsedMessage = await this.parseMessage(data);
-            
-            this.emit('message', parsedMessage);
-            //console.log(parsedMessage);
-          } else {
-            console.log(data)
-            if (showLogs) console.log(`[Instagram - @${this.user}] DEBUG: La operacion era otra:`, data.message.op);
-          }
+    this.ig.realtime.on('message', async (data) => {
+      let isSelfMessage = userId == data.message.user_id;
+      if (!isSelfMessage) {
+        if (data.message.op == 'add') {
+          if (showLogs) this.logMessage(data.message);
+          console.log(data.message);
+          let parsedMessage = await this.parseMessage(data.message);
+          this.emit('message', parsedMessage);
         }
-      });
+      }
+    });
   }
 
   
 
-  logMessage = (data: MessageSyncMessageWrapper) => {
-    if (data.message.item_type == "text") {
-      console.log(`[Instagram - @${this.user}] recibió: "${data.message.text}"`);
-    } else if (data.message.item_type == "media") {
-      if (data.message.media?.media_type == 1) {
-        console.log(`[Instagram - @${this.user}] recibió una imagen:`, data.message.media?.image_versions2?.candidates[0].url);
+  logMessage = (message: any) => {
+    if (message.item_type == "text") {
+      console.log(`[Instagram - @${this.user}] recibió: "${message.text}"`);
+    } else if (message.item_type == "media") {
+      if (message.media?.media_type == 1) {
+        console.log(`[Instagram - @${this.user}] recibió una imagen:`, message.media?.image_versions2?.candidates[0].url);
       } else { 
-        console.log(`[Instagram - @${this.user}] recibió un video:`, data.message.media?.video_versions?.[0].url);
+        console.log(`[Instagram - @${this.user}] recibió un video:`, message.media?.video_versions?.[0].url);
       }
-    } else if (data.message.item_type == "voice_media") {
-      console.log(`[Instagram - @${this.user}] recibió un mensaje de audio:`, data.message.voice_media?.media.audio.audio_src);
-    } else if (data.message.item_type == "like") {
+    } else if (message.item_type == "voice_media") {
+      console.log(`[Instagram - @${this.user}] recibió un mensaje de audio:`, message.voice_media?.media.audio.audio_src);
+    } else if (message.item_type == "like") {
       console.log(`[Instagram - @${this.user}] recibió un like:`, '❤️');
-    } else if (data.message.item_type == "animated_media") {
-      console.log(`[Instagram - @${this.user}] recibió un GIF:`, data.message.animated_media?.images.fixed_height?.url);
-    } else if (data.message.item_type == "raven_media") {
-      if (data.message.visual_media?.media?.media_type == 1) {
-        console.log(`[Instagram - @${this.user}] recibió una imagen efímera:`, data.message.visual_media?.media?.image_versions2?.candidates[0].url);
+    } else if (message.item_type == "animated_media") {
+      console.log(`[Instagram - @${this.user}] recibió un GIF:`, message.animated_media?.images.fixed_height?.url);
+    } else if (message.item_type == "raven_media") {
+      if (message.visual_media?.media?.media_type == 1) {
+        console.log(`[Instagram - @${this.user}] recibió una imagen efímera:`, message.visual_media?.media?.image_versions2?.candidates[0].url);
       } else { 
-        console.log(`[Instagram - @${this.user}] recibió un video efímero:`, data.message.visual_media?.media?.video_versions?.[1].url);
+        console.log(`[Instagram - @${this.user}] recibió un video efímero:`, message.visual_media?.media?.video_versions?.[1].url);
       }
     } 
   }
 
-  parseMessage = (data: MessageSyncMessageWrapper) => {
+  parseMessage = (message: any, threadId?: any) => {
     return new Promise(async (resolve, reject) => {
       let mensajeTexto = "";
       let attachmentType = "";
       let attachmentUrl = "";
       let userName = "";
+      let userKey = threadId ? threadId : message.thread_id;
 
       try {
-        let userInfo = await this.ig.user.info(data.message.user_id.toString());
+        let userInfo = await this.ig.user.info(message.user_id.toString());
         if (userInfo.username && userInfo.username != "") {
           userName = userInfo.username;
         }
       } catch (error) {
         console.log(`[Instagram - @${this.user}] ERROR:`, error);
-        userName = data.message.user_id.toString();
+        userName = message.user_id.toString();
       }
 
       
-      if (data.message.item_type == "text") {
-        mensajeTexto = data.message.text ? data.message.text : "";
-      } else if (data.message.item_type == "media") {
-        if (data.message.media?.media_type == 1) {
+      if (message.item_type == "text") {
+        mensajeTexto = message.text ? message.text : "";
+      } else if (message.item_type == "media") {
+        if (message.media?.media_type == 1) {
           if (IMAGE_TYPE) { 
             attachmentType = IMAGE_TYPE;
-            attachmentUrl = data.message.media?.image_versions2?.candidates[0].url || "";
+            attachmentUrl = message.media?.image_versions2?.candidates[0].url || "";
           }
         } else {
           if (VIDEO_TYPE) { 
             attachmentType = VIDEO_TYPE;
-            attachmentUrl = data.message.media?.video_versions?.[0].url || "";
+            attachmentUrl = message.media?.video_versions?.[0].url || "";
           }
         }
-      } else if (data.message.item_type == "voice_media" && AUDIO_TYPE) {
+      } else if (message.item_type == "voice_media" && AUDIO_TYPE) {
         attachmentType = AUDIO_TYPE;
-        attachmentUrl = data.message.voice_media?.media.audio.audio_src || "";
-      } else if (data.message.item_type == "like") {
+        attachmentUrl = message.voice_media?.media.audio.audio_src || "";
+      } else if (message.item_type == "like") {
         mensajeTexto = '❤️';
-      } else if (data.message.item_type == "animated_media" && IMAGE_TYPE) {
+      } else if (message.item_type == "animated_media" && IMAGE_TYPE) {
         attachmentType = IMAGE_TYPE;
-        attachmentUrl = data.message.animated_media?.images.fixed_height?.url || "";
-      } else if (data.message.item_type == "raven_media") {
-        if (data.message.visual_media?.media?.media_type == 1) {
+        attachmentUrl = message.animated_media?.images.fixed_height?.url || "";
+      } else if (message.item_type == "raven_media") {
+        if (message.visual_media?.media?.media_type == 1) {
           if (IMAGE_TYPE) { 
             attachmentType = IMAGE_TYPE;
-            attachmentUrl = data.message.visual_media?.media?.image_versions2?.candidates[0].url || "";
+            attachmentUrl = message.visual_media?.media?.image_versions2?.candidates[0].url || "";
           }
         } else { 
           if (VIDEO_TYPE) { 
             attachmentType = VIDEO_TYPE;
-            attachmentUrl = data.message.visual_media?.media?.video_versions?.[1].url || "";
+            attachmentUrl = message.visual_media?.media?.video_versions?.[1].url || "";
           }
         }
       }
 
       resolve({
         keyApp: this.appKey,
-        userKey: data.message.thread_id,
+        userKey,
         msj: {
           userName,
           type: "PV",

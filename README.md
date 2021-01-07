@@ -1,47 +1,65 @@
 # Inka Middleware
 
-Software encargado de conectar distintas redes sociales, como Facebook, Instagram y Telegram con el fin de unificarlas en un mismo chat de servicio al cliente en el proyecto core de Inka.
+Software encargado de conectar distintas redes sociales, como Instagram y Facebook con el fin de unificarlas en un mismo chat de servicio al cliente en el proyecto core de Inka.
+
+## 1. Instalación
+
+### 1.1. Requisitos
+- Node 12 o superior
+- `npm`
+
+### 1.2. Variables de entorno
+Las variables de entorno se modifican en un archivo `.env` ubicado en la raíz del proyecto.
+```
+CORE_HOST=123.12.123.123
+CORE_PORT=9090
+
+PORT=3000
+
+INSTAGRAM_VALUE=Instagram
+INSTAGRAM_PORT=9021
+
+FACEBOOK_VALUE=Facebook
+FACEBOOK_PORT=9022
+
+FACEBOOK_VERIFY_TOKEN=inkaapp
+FACEBOOK_APP_SECRET=3fda343dbe9581d0792e
+
+PGUSER=aware
+PGHOST=123.12.123.123
+PGPASSWORD=r.2ae3e,6696be
+PGDATABASE=aware
+PGPORT=5432
+
+```
+
+### 1.3. Instrucciones
+
+1. Instalar librerías y dependencias
+```bash
+npm install
+```
+
+3. Correr el servicio
+```bash
+npm start
+```
 
 ## 2. Configuración
 
-### 2.1. Telegram
-
-#### Configuración de variables de entorno
-
-1. Inicia sesión con tu cuenta de Telegram [en este enlace](https://my.telegram.org/).
-2.  Navega hacia  ["API development tools"](https://my.telegram.org/apps)  y rellena el formulario.
-3. Obtendrás los parámetros  **`api_id`**  y  **`api_hash`**  requeridos, que corresponden a los valores de `TELEGRAM_API_ID` y `TELEGRAM_API_HASH` respectivos en las variables de entorno.
-
-![image](https://user-images.githubusercontent.com/16374322/100661965-0549bf80-3333-11eb-9526-58ae72c5ca4b.png)
-
-
-Un ejemplo de como deben quedar las variables de entorno en el archivo `.env`:
-```
-TELEGRAM_API_ID=1234567
-TELEGRAM_API_HASH=fcab3735bc4c7f130e1351d55726
-```
-
-> Debes reemplazar con tus propios valores de `api_id` y `api_hash`
-
-#### Configuración de la base de datos
-
-| Columna | Valor |
-|--|--|
-| `app_name` | `Telegram` |
-| `app_data1` | Número de teléfono. Ej: `56987654321` |
-
-### 2.2. Instagram
+### 2.1. Instagram
 
 #### Configuración de la base de datos
 
 | Columna | Valor |
 |--|--|
 | `app_name` | `Instagram` |
-| `app_data1` | Nombre de usuario sin `@`. Ej: `usuario_empresa` |
-| `app_data2` | Contraseña de inicio de sesión. Ej: `3gja70#2df` |
+| `app_data1` | `appKey`. Nombre de usuario sin `@` + `-ig`. Ej: `usuario_empresa-ig` |
+| `app_data2` | Nombre de usuario sin `@`. Ej: `usuario_empresa` |
+| `app_data3` | Contraseña de inicio de sesión. Ej: `3gja70#2df` |
 
 
-### 2.3. Facebook
+### 2.2. Facebook
 
 > Es importante destacar que este software no es compatible con cuentas personales de Facebook, solo con Páginas de Facebook.
 
@@ -89,7 +107,7 @@ Además de una página, se necesita tener una **aplicación** de Facebook. En ca
 
 ![image](https://user-images.githubusercontent.com/16374322/100555618-58603b80-327b-11eb-8b82-c6fe19c31aff.png)
 
-6. Ahora en la sección "Tokens de acceso" debería aparecer la página vinculada. El primer dato importante a extraer es el **ID de la página**, que está ubicado justo debajo del nombre. En el caso de la imagen, el nombre es "Página de Ejemplo" y el ID es  `108388123456789`.
+6. Ahora en la sección "Tokens de acceso" debería aparecer la página vinculada. El primer dato importante a extraer es el **ID de la página**, que está ubicado justo debajo del nombre. En el caso de la imagen, el nombre es "Página de Ejemplo" y el ID es `108388123456789`.
 
 ![image](https://user-images.githubusercontent.com/16374322/100555683-f9e78d00-327b-11eb-956c-334cedb501e4.png)
 
@@ -97,5 +115,14 @@ Además de una página, se necesita tener una **aplicación** de Facebook. En ca
 8. Al abrirse el dialogo, se pueden ver los primeros caracteres del token seguidos de unos asteriscos que ocultan la información. Para ver el token completo y poder copiarlo, debemos marcar la casilla "Acepto".
 
 ![image](https://user-images.githubusercontent.com/16374322/100555796-b4778f80-327c-11eb-9b6b-915a2f9fb10e.png)
+
+#### Configuración de la base de datos
+
+| Columna | Valor |
+|--|--|
+| `app_name` | `Facebook` |
+| `app_data1` | `appKey`. ID de la página + `-fb`. Ej: `108388123456789-fb` |
+| `app_data2` | ID de la página. Ej: `108388123456789` |
+| `app_data3` | Token de acceso de la página. Ej: `3gja70#2df` |
 
  
