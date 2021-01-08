@@ -3,6 +3,7 @@ require('dotenv').config()
 
 import { EventEmitter } from 'events';
 import Net from 'net';
+import logger from "./common/logger";
 
 export default class SocketClient extends EventEmitter{
   host: string;
@@ -21,17 +22,26 @@ export default class SocketClient extends EventEmitter{
       });
   
       this.client.on('connect', async () => {
-        console.log("Conectado correctamente al Core");
+        logger.log({
+          level: 'debug',
+          message: `Conectado correctamente como cliente al socket del Core ${this.host}:${process.env.CORE_PORT}`
+        });
         let messageReady = JSON.stringify(message) + "\r";
         this.client.write(messageReady);
-        console.log("Enviado:", message)
+        logger.log({
+          level: 'debug',
+          message: `Enviado: ${message}`
+        });
         this.client.end();
   
         
       });
 
       this.client.on("error", (err) => {
-        console.log("Error al conectarse al Core: ", err);
+        logger.log({
+          level: 'error',
+          message: `Conectado correctamente como cliente al socket del Core ${this.host}:${process.env.CORE_PORT}. Error: ${err}`
+        });
         this.client.end();
       })
     } 

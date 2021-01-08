@@ -2,28 +2,40 @@ import { EventEmitter } from 'events';
 import express from 'express';
 import crypto from 'crypto';
 import bodyParser from 'body-parser';
+import fs from "fs";
+import http from "http";
+import https from "https";
 
-const fs = require('fs');
-const http = require('http');
-const https = require('https');
+import logger from "./common/logger";
 
 var privateKey: any;
 var certificate: any;
-
 
 export default class ExpressServer extends EventEmitter {
 
   app = express();
   httpServer: any;
   httpsServer: any;
+  verifyToken: string;
+  appSecret: string;
 
-  constructor() {
+  constructor(verifyToken: string, appSecret: string) {
     super();
+    this.verifyToken = verifyToken;
+    this.appSecret = appSecret;
 
-    if (process.env.PRIVATE_KEY_PATH && process.env.CERTIFICATE_PATH) {
-      privateKey  = fs.readFileSync(process.env.PRIVATE_KEY_PATH, 'utf8');
-      certificate = fs.readFileSync(process.env.CERTIFICATE_PATH, 'utf8');
+    try {
+      if (process.env.PRIVATE_KEY_PATH && process.env.CERTIFICATE_PATH) {
+        privateKey = fs.readFileSync(process.env.PRIVATE_KEY_PATH, 'utf8');
+        certificate = fs.readFileSync(process.env.CERTIFICATE_PATH, 'utf8');
+      }
+    } catch (error) {
+      logger.log({
+        level: 'warn',
+        message: `Error al cargar los certificados HTTPS: ${error}`
+      });
     }
+    
 
     this.app.use(bodyParser.json({ verify: this.verifyFacebookRequestSignature }));
     this.app.use(bodyParser.urlencoded({ extended: true }));
@@ -36,7 +48,7 @@ export default class ExpressServer extends EventEmitter {
     
     this.app.get('/webhook', (req: any, res: any) => {
       if (req.query['hub.mode'] === 'subscribe' &&
-        req.query['hub.verify_token'] === process.env.FACEBOOK_VERIFY_TOKEN) {
+        req.query['hub.verify_token'] === this.verifyToken) {
         res.send(req.query['hub.challenge']);
       } else {
         res.sendStatus(400);
@@ -48,25 +60,23 @@ export default class ExpressServer extends EventEmitter {
       this.emit("facebookWebhook", req.body);
       
     });
-
-    this.app.post('/telegram', (req: any, res: any) => {
-      
-      console.log(req.body);
-      res.sendStatus(200);
-      this.emit("telegramCode", req.body);
-      
-    });
     
     if (privateKey && certificate) {
       let credentials = {key: privateKey, cert: certificate};
       this.httpsServer = https.createServer(credentials, this.app);
       this.httpsServer.listen(process.env.PORT || 3000, async () => {
-        console.log(`Servidor HTTPS corriendo en el puerto ${process.env.PORT || 3000}`);
+        logger.log({
+          level: 'info',
+          message: `Servidor HTTPS corriendo en el puerto ${process.env.PORT || 3000}`
+        });
       });
     } else {
       this.httpServer = http.createServer(this.app); 
       this.httpServer.listen(process.env.PORT || 3000, async () => {
-        console.log(`Servidor HTTP corriendo en el puerto ${process.env.PORT || 3000}`);
+        logger.log({
+          level: 'info',
+          message: `Servidor HTTP corriendo en el puerto ${process.env.PORT || 3000}`
+        });
       });
     }
   }
@@ -79,8 +89,8 @@ export default class ExpressServer extends EventEmitter {
     } else {
       const elements = signature.split('=');
       const signatureHash = elements[1];
-      if (process.env.FACEBOOK_APP_SECRET) {
-        const expectedHash = crypto.createHmac('sha1', process.env.FACEBOOK_APP_SECRET)
+      if (this.appSecret) {
+        const expectedHash = crypto.createHmac('sha1', this.appSecret)
           .update(buf)
           .digest('hex');
   

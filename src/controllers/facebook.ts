@@ -2,13 +2,13 @@ import {EventEmitter} from "events";
 
 const { Messenger, Text, Audio, Video, Image, File } = require('fbmessenger');
 
+import logger from "../common/logger";
+
 const IMAGE_TYPE = "image";
 const VIDEO_TYPE = "video";
 const AUDIO_TYPE = "audio";
 const FILE_TYPE = null;
 const GEO_TYPE = null;
-
-const showLogs = true;
 
 export default class FacebookPage extends EventEmitter {
   messenger: any;
@@ -28,32 +28,34 @@ export default class FacebookPage extends EventEmitter {
     try {
       this.startListener();
     } catch (error) {
-      console.log("Error", error)
+      logger.log({
+        level: 'error',
+        message: `Error al inicializar: ${error}`,
+        social: "Facebook",
+        user: this.pageId
+      });
     }
   }
 
-  handle = async (body: any) => {/* 
-    body.entry.map((entry: any) => {
-      entry.messaging.map((messaging: any) => {
-        console.log(messaging, messaging.message, messaging.message.attachments)
-      })
-    }) */
+  handle = async (body: any) => {
     return this.messenger.handle(body);
-    
   }
 
   startListener = () => {
-    if (showLogs) console.log(`[Facebook - ${this.pageId}] Acceso correcto. Escuchando mensajes...`);
+    logger.log({
+      level: 'info',
+      message: `Acceso correcto. Escuchando mensajes...`,
+      social: "Facebook",
+      user: this.pageId
+    });
 
     this.messenger.on('message', async (message: any) => {
       const recipient = message.recipient.id;
 
       if (this.pageId == recipient) {
-        if (showLogs) this.logMessage(message);
+        this.logMessage(message);
         let parsedMessage = await this.parseMessage(message);
-        console.log("Mensaje del cliente al core", parsedMessage);
         this.emit("message", parsedMessage);
-        
       }
     });
     
@@ -62,26 +64,54 @@ export default class FacebookPage extends EventEmitter {
   logMessage = (message: any) => {
     const recipient = message.recipient.id;
 
-    //console.log(message);
-
     if (this.pageId == recipient) {
       
     if ('attachments' in message.message) {
       const type = message.message.attachments[0].type;
       if (type == "location") {
-        console.log(`[Facebook - ${this.pageId}] recibió una ubicación: https://www.google.com/maps/place/${message.message.attachments[0].payload.coordinates.lat},${message.message.attachments[0].payload.coordinates.long}`);
+        logger.log({
+          level: 'info',
+          message: `Se recibió una ubicación: https://www.google.com/maps/place/${message.message.attachments[0].payload.coordinates.lat},${message.message.attachments[0].payload.coordinates.long}`,
+          social: "Facebook",
+          user: this.pageId
+        });
       } else if (type == "audio") {
-        console.log(`[Facebook - ${this.pageId}] recibió un audio: ${message.message.attachments[0].payload.url}`);
+        logger.log({
+          level: 'info',
+          message: `Se recibió un audio: ${message.message.attachments[0].payload.url}`,
+          social: "Facebook",
+          user: this.pageId
+        });
       } else if (type == "video") {
-        console.log(`[Facebook - ${this.pageId}] recibió un video: ${message.message.attachments[0].payload.url}`);
+        logger.log({
+          level: 'info',
+          message: `Se recibió un video: ${message.message.attachments[0].payload.url}`,
+          social: "Facebook",
+          user: this.pageId
+        });
       } else if (type == "image") {
-        console.log(`[Facebook - ${this.pageId}] recibió una imagen: ${message.message.attachments[0].payload.url}`);
+        logger.log({
+          level: 'info',
+          message: `Se recibió un imagen: ${message.message.attachments[0].payload.url}`,
+          social: "Facebook",
+          user: this.pageId
+        });
       } else if (type == "file") {
-        console.log(`[Facebook - ${this.pageId}] recibió un archivo: ${message.message.attachments[0].payload.url}`);
+        logger.log({
+          level: 'info',
+          message: `Se recibió un archivo: ${message.message.attachments[0].payload.url}`,
+          social: "Facebook",
+          user: this.pageId
+        });
       } 
   
     } else if ('text' in message.message) {
-      console.log(`[Facebook - ${this.pageId}] recibió: "${message.message.text}"`);
+      logger.log({
+        level: 'info',
+        message: `Se recibió: "${message.message.text}"`,
+        social: "Facebook",
+        user: this.pageId
+      });
     }
   }
   }
@@ -123,7 +153,14 @@ export default class FacebookPage extends EventEmitter {
           attachmentType = FILE_TYPE;
           attachmentUrl = message.message.attachments[0].payload.url;
         }
-        if (!attachmentType) console.log(`[Facebook - ${this.pageId}] Attachment distinto:`, type);
+        if (!attachmentType) {
+          logger.log({
+            level: 'silly',
+            message: `Se recibió attachmentType distinto: ${type}`,
+            social: "Facebook",
+            user: this.pageId
+          });
+        }
       }
 
       let user;
@@ -134,7 +171,12 @@ export default class FacebookPage extends EventEmitter {
           'last_name'
         ])
       } catch (error) {
-        if (showLogs) console.log(`[Facebook - ${this.pageId}] Error obteniendo el usuario:`, error);
+        logger.log({
+          level: 'error',
+          message: `Error obteniendo el usuario: ${error}`,
+          social: "Facebook",
+          user: this.pageId
+        });
       }
 
 
