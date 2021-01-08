@@ -9,28 +9,34 @@ import SocketClient from './socket_client';
 import SockerServer from './socket_server';
 import ExpressServer from './express_server';
 
-let igs: Instagram[] = [];
-let fbs: Facebook[] = [];
+import logger from "./common/logger";
 
 const pool = new Pool();
 
-const sendToUser = (message: any) => {
+let igs: Instagram[] = [];
+let fbs: Facebook[] = [];
+
+const foundSocial = (appKey: string) => {
   let founded;
 
   if (!founded) {
     for (const ig of igs) {
-      if (ig.appKey == message.keyApp)
+      if (ig.appKey == appKey)
         founded = ig;
     }
   }
 
   if (!founded) {
     for (const fb of fbs) {
-      if (fb.appKey == message.keyApp)
+      if (fb.appKey == appKey)
         founded = fb;
     }
   }
+  return founded;
+}
 
+const sendToUser = (message: any) => {
+  const founded = foundSocial(message.keyApp)
   if (founded) founded.sendMessage(message);
 }
 
@@ -53,8 +59,6 @@ const getRows = async () => {
 
 const main = async () => {
   try {
-    const expressServer = new ExpressServer();
-
     if (process.env.INSTAGRAM_PORT) {
       const instagramSocket = new SockerServer(parseInt(process.env.INSTAGRAM_PORT));
       instagramSocket.on("message", (message) => {
@@ -68,6 +72,8 @@ const main = async () => {
         sendToUser(message);
       });
     }
+
+    let facebookApps = [];
 
       const rows = await getRows();
       for (const row of rows) {
@@ -85,7 +91,10 @@ const main = async () => {
             });
             igs.push(ig);
           } catch (error) {
-            console.log(error);
+            logger.log({
+              level: 'error',
+              message: error
+            });
           }
           
         }
@@ -99,18 +108,39 @@ const main = async () => {
           const coreHost = row.app_data7.trim();
           let fb = new Facebook(appKey, pageId, accessToken);
           fb.init();
-          expressServer.on("facebookWebhook", (data) => {
-            fb.handle(data);
-          })
+
           fb.on("message", (message: any) => {
             const socketClient = new SocketClient(coreHost);
             socketClient.write(message);
           });
           fbs.push(fb);
+
+          let alreadyHasAppSecret = facebookApps.filter(f => f.appSecret == appSecret)[0];
+          if (!alreadyHasAppSecret) {
+            facebookApps.push({appKey, verifyToken, appSecret});
+          }
         }
       }
+
+      for (const facebookApp of facebookApps) {
+        const expressServer = new ExpressServer(facebookApp.appSecret, facebookApp.verifyToken);
+        expressServer.on("facebookWebhook", (data) => {
+          const fb = foundSocial(facebookApp.appKey);
+          if (fb && fb instanceof Facebook) {
+            fb.handle(data);
+          } else {
+            logger.log({
+              level: 'warn',
+              message: `La clase con el appKey ${facebookApp.appKey} es incorrecta: ${fb}`
+            });
+          }
+        }) 
+      }
   } catch (error) {
-    console.error(error);
+    logger.log({
+      level: 'error',
+      message: error
+    });
   }
 }
 

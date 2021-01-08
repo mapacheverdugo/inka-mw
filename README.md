@@ -7,13 +7,17 @@ Software encargado de conectar distintas redes sociales, como Instagram y Facebo
 ### 1.1. Requisitos
 - Node 12 o superior
 - `npm`
+- `ffmpeg`
 
 ### 1.2. Variables de entorno
-Las variables de entorno se modifican en un archivo `.env` ubicado en la raíz del proyecto.
+El archivo de configuración se encuentra en la raíz del proyecto con el nombre de `.env`. Acá un ejemplo:
 ```
 CORE_PORT=9090
+LOG_LEVEL=info
 
 PORT=3000
+PRIVATE_KEY_PATH=/etc/ssl/demo.host.cl/privkey.pem
+CERTIFICATE_PATH=/etc/ssl/demo.host.cl/cert.pem
 
 FACEBOOK_VALUE=Facebook
 FACEBOOK_PORT=9021
@@ -29,6 +33,24 @@ PGDATABASE=aware
 PGPORT=5432
 
 ```
+
+| **Variable**             | **Descripción**                                                                                                           |
+|--------------------------|---------------------------------------------------------------------------------------------------------------------------|
+| `CORE_PORT`              | Puerto del socket TCP del Core.                                                                                           |
+| `PORT`                   | Puerto donde correrá la API HTTP que donde se conectaran los webhook de Facebook.                                         |
+| `LOG_LEVEL`              | Tipo de detalles de log. Por defecto `info`. Más información [acá](https://www.npmjs.com/package/winston#logging-levels). |
+| `PRIVATE_KEY_PATH`       | Ubicación de la llave privada del certificado SSL.                                                                        |
+| `CERTIFICATE_PATH`       | Ubicación del certificado SLL.                                                                                            |
+| `FACEBOOK_VALUE`         | Valor en la tabla `inka_app` de las aplicaciones Facebook. Por defecto es `Facebook`.                                     |
+| `FACEBOOK_PORT`          | Puerto donde correrá el servido socket TCP para recibir mensajes de Facebook.                                             |
+| `INSTAGRAM_VALUE`        | Valor en la tabla `inka_app` de las aplicaciones Instagram. Por defecto es `Instagram`.                                   |
+| `INSTAGRAM_PORT`         | Puerto donde correrá el servido socket TCP para recibir mensajes de Instagram.                                            |
+| `INSTAGRAM_SEC_INTERVAL` | Intervalo en segundos que define cada cuanto se procesarán las "solicitudes de mensajes" en Instagram.                    |
+| `PGUSER`                 | Usuario de la base de datos PostgreSQL.                                                                                   |
+| `PGHOST`                 | IP o host de la base de datos PostgreSQL.                                                                                 |
+| `PGPASSWORD`             | Contraseña de la base de datos PostgreSQL.                                                                                |
+| `PGDATABASE`             | Nombre de la base de datos PostgreSQL.                                                                                    |
+| `PGPORT`                 | Puerto de la base de datos PostgreSQL.                                                                                    |
 
 ### 1.3. Instrucciones
 
@@ -54,6 +76,7 @@ npm start
 | `app_data1` | `appKey`. Nombre de usuario sin `@` + `-ig`. Ej: `usuario_empresa-ig` |
 | `app_data2` | Nombre de usuario sin `@`. Ej: `usuario_empresa` |
 | `app_data3` | Contraseña de inicio de sesión. Ej: `3gja70#2df` |
+| `app_data7` | IP o host del Core. Ej: `123.15.12.143` |
 
 
 ### 2.2. Facebook
@@ -121,5 +144,8 @@ Además de una página, se necesita tener una **aplicación** de Facebook. En ca
 | `app_data1` | `appKey`. ID de la página + `-fb`. Ej: `108388123456789-fb` |
 | `app_data2` | ID de la página. Ej: `108388123456789` |
 | `app_data3` | Token de acceso de la página. Ej: `3gja70#2df` |
+| `app_data4` | Token de verificación. Ej: `inkaapp` |
+| `app_data5` | Secreto de la app. Ej: `3g12866d3dbe6792ae02df2d0ja` |
+| `app_data7` | IP o host del Core. Ej: `123.15.12.143` |
 
  
