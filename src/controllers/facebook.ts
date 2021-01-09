@@ -52,11 +52,22 @@ export default class FacebookPage extends EventEmitter {
     this.messenger.on('message', async (message: any) => {
       const recipient = message.recipient.id;
 
-      if (this.pageId == recipient) {
-        this.logMessage(message);
-        let parsedMessage = await this.parseMessage(message);
-        this.emit("message", parsedMessage);
+      try {
+        if (this.pageId == recipient) {
+          this.logMessage(message);
+          let parsedMessage = await this.parseMessage(message);
+          this.emit("message", parsedMessage);
+        }
+      } catch (error) {
+        logger.log({
+          level: 'error',
+          message: `Error: ${error}`,
+          social: "Facebook",
+          user: this.pageId
+        });
       }
+
+      
     });
     
   }
@@ -204,16 +215,13 @@ export default class FacebookPage extends EventEmitter {
       if (message.msj.attachmentType && message.msj.attachmentType != "" && message.msj.attachmentUrl && message.msj.attachmentUrl != "") {
         if (message.msj.attachmentType.startsWith(IMAGE_TYPE)) {
           this.sendImage(message.userKey, message.msj.attachmentUrl);
-        }
-        if (message.msj.attachmentType.startsWith(AUDIO_TYPE)) {
+        } else if (message.msj.attachmentType.startsWith(AUDIO_TYPE)) {
           this.sendAudio(message.userKey, message.msj.attachmentUrl);
-        }
-        if (message.msj.attachmentType.startsWith(VIDEO_TYPE)) {
+        } else if (message.msj.attachmentType.startsWith(VIDEO_TYPE)) {
           this.sendVideo(message.userKey, message.msj.attachmentUrl);
+        } else {
+          this.sendFile(message.userKey, message.msj.attachmentUrl);
         }
-          /* case FILE_TYPE:
-            this.sendVideo(message.userKey, message.msj.attachmentUrl);
-            break; */
         
       }
       
@@ -224,32 +232,77 @@ export default class FacebookPage extends EventEmitter {
   }
 
   sendText = async (userId: string, text: string) => {
-    this.messenger.send(new Text(text), userId);
+    try {
+      this.messenger.send(new Text(text), userId);
+    } catch (error) {
+      logger.log({
+        level: 'error',
+        message: `No se pudo enviar texto: ${error}`,
+        social: "Facebook",
+        user: this.pageId
+      });
+    }
+    
   }
 
   sendAudio = async (userId: string, url: string) => {
-    this.messenger.send(new Audio({
-      url,
-    }), userId);
+    try {
+      this.messenger.send(new Audio({
+        url,
+      }), userId);
+    } catch (error) {
+      logger.log({
+        level: 'error',
+        message: `No se pudo enviar audio: ${error}`,
+        social: "Facebook",
+        user: this.pageId
+      });
+    }
   }
 
   sendImage = async (userId: string, url: string) => {
-    this.messenger.send(new Image({
-      url,
-    }), userId);
+    try {
+      this.messenger.send(new Image({
+        url,
+      }), userId);
+    } catch (error) {
+      logger.log({
+        level: 'error',
+        message: `No se pudo enviar imagen: ${error}`,
+        social: "Facebook",
+        user: this.pageId
+      });
+    }
+    
   }
 
   sendVideo = async (userId: string, url: string) => {
-    this.messenger.send(new Video({
-      url,
-    }), userId);
+    try {
+      this.messenger.send(new Video({
+        url,
+      }), userId);
+    } catch (error) {
+      logger.log({
+        level: 'error',
+        message: `No se pudo enviar video: ${error}`,
+        social: "Facebook",
+        user: this.pageId
+      });
+    }
   }
 
   sendFile = async (userId: string, url: string) => {
-    this.messenger.send(new File({
-      url,
-    }), userId);
+    try {
+      this.messenger.send(new File({
+        url,
+      }), userId);
+    } catch (error) {
+      logger.log({
+        level: 'error',
+        message: `No se pudo enviar archivo: ${error}`,
+        social: "Facebook",
+        user: this.pageId
+      });
+    }
   }
-
-
 }

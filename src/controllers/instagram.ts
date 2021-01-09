@@ -141,18 +141,37 @@ export default class Instagram extends EventEmitter {
       user: `@${this.user}`
     });
 
-    let userId = await this.ig.user.getIdByUsername(this.user);
+    try {
+      let userId = await this.ig.user.getIdByUsername(this.user);
 
-    this.ig.realtime.on('message', async (data) => {
-      let isSelfMessage = userId == data.message.user_id;
-      if (!isSelfMessage) {
-        if (data.message.op == 'add') {
-          this.logMessage(data.message);
-          let parsedMessage = await this.parseMessage(data.message);
-          this.emit('message', parsedMessage);
+      this.ig.realtime.on('message', async (data) => {
+        try {
+          let isSelfMessage = userId == data.message.user_id;
+          if (!isSelfMessage) {
+            if (data.message.op == 'add') {
+              this.logMessage(data.message);
+              let parsedMessage = await this.parseMessage(data.message);
+              this.emit('message', parsedMessage);
+            }
+          }
+        } catch (error) {
+          logger.log({
+            level: 'error',
+            message: `Error: ${error}`,
+            social: "Instagram",
+            user: `@${this.user}`
+          });
         }
-      }
-    });
+        
+      });
+    } catch (error) {
+      logger.log({
+        level: 'warn',
+        message: `No se pudo obtener el nombre de usuario`,
+        social: "Instagram",
+        user: `@${this.user}`
+      });
+    }
   }
 
   
@@ -281,18 +300,22 @@ export default class Instagram extends EventEmitter {
         }
       }
 
-      resolve({
-        keyApp: this.appKey,
-        userKey,
-        msj: {
-          userName,
-          type: "PV",
-          attachmentType,
-          attachmentUrl,
-          mensajeTexto,
-        },
-        type: "new_message"
-      });
+      if (attachmentType != "" || attachmentUrl != "" || mensajeTexto != "") {
+        resolve({
+          keyApp: this.appKey,
+          userKey,
+          msj: {
+            userName,
+            type: "PV",
+            attachmentType,
+            attachmentUrl,
+            mensajeTexto,
+          },
+          type: "new_message"
+        });
+      } else {
+        reject("Era un mensaje vacio")
+      }
     })
   }
 
