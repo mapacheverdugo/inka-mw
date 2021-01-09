@@ -343,6 +343,10 @@ export default class Instagram extends EventEmitter {
       
       if (thread) {
         if (message && message.type == "RESPONSE_MESSAGE") {
+          if (message.msj.mensajeTexto && message.msj.mensajeTexto != "") {
+            await this.sendText(thread, message.msj.mensajeTexto);
+          }
+
           if (message.msj.attachmentType && message.msj.attachmentType != "" && message.msj.attachmentUrl && message.msj.attachmentUrl != "") {
             logger.log({
               level: 'debug',
@@ -352,28 +356,31 @@ export default class Instagram extends EventEmitter {
 
             });
             if (message.msj.attachmentType.startsWith(IMAGE_TYPE)) {
-              this.sendImage(thread, message.msj.attachmentUrl);
+              await this.sendImage(thread, message.msj.attachmentUrl);
             }
             if (message.msj.attachmentType.startsWith(AUDIO_TYPE)) {
-              this.sendAudio(thread, message.msj.attachmentUrl);
+              await this.sendAudio(thread, message.msj.attachmentUrl);
             }
             if (message.msj.attachmentType.startsWith(VIDEO_TYPE)) {
-              this.sendVideo(thread, message.msj.attachmentUrl);
+              await this.sendVideo(thread, message.msj.attachmentUrl);
             }
           }
 
-          if (message.msj.mensajeTexto && message.msj.mensajeTexto != "") {
-            this.sendText(thread, message.msj.mensajeTexto)
-          }
+          
         }
       }
     } catch (error) {
-      logger.log({
-        level: 'warn',
-        message: error,
-        social: "Instagram",
-        user: `@${this.user}`
-      });
+      
+      if (error) {
+        logger.log({
+          level: 'warn',
+          message: `${error.toString()}`,
+          social: "Instagram",
+          user: `@${this.user}`
+        });
+      } else {
+        error = "Error desconocido";
+      }
 
       let errorMessage = {
         keyApp: this.appKey,
@@ -381,19 +388,27 @@ export default class Instagram extends EventEmitter {
         msj: {
           userName: message.userName,
           type: "PV",
-          attachmentType: message.attachmentType,
-          attachmentUrl: message.attachmentUrl,
-          mensajeTexto: `ERROR: ${error}`,
+          attachmentType: "",
+          attachmentUrl: "",
+          mensajeTexto: `No se pudo enviar mensaje. Error: ${error.toString()}`,
         },
         type: "new_message"
       }
+      
       this.emit('message', errorMessage);
     }
     
   }
 
   sendText = async (thread: DirectThreadEntity, text: string) => {
-    await thread.broadcastText(text);
+    return new Promise(async (resolve, reject) => {
+      try {
+        let res = await thread.broadcastText(text);
+        resolve(res);
+      } catch (error) {
+        reject(error);
+      }
+    });
   }
 
   sendImage = (thread: DirectThreadEntity, url: string) => {
@@ -637,12 +652,11 @@ export default class Instagram extends EventEmitter {
                   if (err) {
                     reject(err)
                   } else {
-                    reject(new Error("Problema al obtener metadata con ffmpeg"))
+                    reject(new Error("Problema al obtener metadata del archivo"))
                   }
-                  
                 }
               } else {
-                reject(new Error(`El archivo venia con fileName vacío, probablemente un archivo corrupto`));
+                reject(new Error(`El archivo probablemente estaba corrupto`));
               }
             });
           });

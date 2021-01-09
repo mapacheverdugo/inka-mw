@@ -84,9 +84,7 @@ export default class ExpressServer extends EventEmitter {
   verifyFacebookRequestSignature = (req: any, res: any, buf: any) => {
     const signature = req.headers['x-hub-signature'];
   
-    if (!signature) {
-      throw new Error('No se pudo validar la firma de Facebook');
-    } else {
+    if (signature) {
       const elements = signature.split('=');
       const signatureHash = elements[1];
       if (this.appSecret) {
@@ -98,6 +96,10 @@ export default class ExpressServer extends EventEmitter {
           throw new Error('No se pudo validar la firma de Facebook');
         }
       }
+      
+    } else {
+      console.log(req.headers)
+      //throw new Error('No se pudo validar la firma de Facebook');
     }
   };
 }

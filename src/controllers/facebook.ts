@@ -213,105 +213,144 @@ export default class FacebookPage extends EventEmitter {
   sendMessage = async (message: any) => {
     try {
       if (message && message.type == "RESPONSE_MESSAGE") {
+        if (message.msj.mensajeTexto && message.msj.mensajeTexto != "") {
+          await this.sendText(message.userKey, message.msj.mensajeTexto)
+        }
+
         if (message.msj.attachmentType && message.msj.attachmentType != "" && message.msj.attachmentUrl && message.msj.attachmentUrl != "") {
           if (message.msj.attachmentType.startsWith(IMAGE_TYPE)) {
-            this.sendImage(message.userKey, message.msj.attachmentUrl);
+            await this.sendImage(message.userKey, message.msj.attachmentUrl);
           } else if (message.msj.attachmentType.startsWith(AUDIO_TYPE)) {
-            this.sendAudio(message.userKey, message.msj.attachmentUrl);
+            await this.sendAudio(message.userKey, message.msj.attachmentUrl);
           } else if (message.msj.attachmentType.startsWith(VIDEO_TYPE)) {
-            this.sendVideo(message.userKey, message.msj.attachmentUrl);
+            await this.sendVideo(message.userKey, message.msj.attachmentUrl);
           } else {
-            this.sendFile(message.userKey, message.msj.attachmentUrl);
+            await this.sendFile(message.userKey, message.msj.attachmentUrl);
           }
           
         }
         
-        if (message.msj.mensajeTexto && message.msj.mensajeTexto != "") {
-          this.sendText(message.userKey, message.msj.mensajeTexto)
-        }
+        
       }
     } catch (error) {
-      logger.log({
-        level: 'error',
-        message: `No se pudo enviar mensaje. Si viene con adjunto archivo puede estar dañado. Error: ${error}`,
-        social: "Instagram",
-        user: this.pageId
-      });
+      if (error) {
+        logger.log({
+          level: 'warn',
+          message: `${error.toString()}`,
+          social: "Facebook",
+          user: this.pageId
+        });
+      } else {
+        error = "Error desconocido";
+      }
+
+      let errorMessage = {
+        keyApp: this.appKey,
+        userKey: message.userKey,
+        msj: {
+          userName: message.userName,
+          type: "PV",
+          attachmentType: "",
+          attachmentUrl: "",
+          mensajeTexto: `No se pudo enviar mensaje. Error: ${error.toString()}`,
+        },
+        type: "new_message"
+      }
+      
+      this.emit('message', errorMessage);
     }
   }
 
-  sendText = async (userId: string, text: string) => {
-    try {
-      this.messenger.send(new Text(text), userId);
-    } catch (error) {
-      logger.log({
-        level: 'error',
-        message: `No se pudo enviar texto: ${error}`,
-        social: "Facebook",
-        user: this.pageId
-      });
-    }
-    
+  sendText = (userId: string, text: string) => {
+    return new Promise(async (resolve, reject) => {
+      try {
+        let res = await this.messenger.send(new Text(text), userId);
+        resolve(res);
+      } catch (error) {
+        logger.log({
+          level: 'error',
+          message: `No se pudo enviar texto: ${error}`,
+          social: "Facebook",
+          user: this.pageId
+        });
+        reject(new Error("No se pudo enviar el texto a Facebook"));
+      }
+    });
   }
 
-  sendAudio = async (userId: string, url: string) => {
-    try {
-      this.messenger.send(new Audio({
-        url,
-      }), userId);
-    } catch (error) {
-      logger.log({
-        level: 'error',
-        message: `No se pudo enviar audio: ${error}`,
-        social: "Facebook",
-        user: this.pageId
-      });
-    }
+  sendAudio = (userId: string, url: string) => {
+    return new Promise(async (resolve, reject) => {
+      try {
+        let res = await this.messenger.send(new Audio({
+          url,
+        }), userId);
+        resolve(res);
+      } catch (error) {
+        logger.log({
+          level: 'error',
+          message: `No se pudo enviar audio: ${error}`,
+          social: "Facebook",
+          user: this.pageId
+        });
+        reject(new Error("No se pudo subir el audio a Facebook"));
+      }
+    });
   }
 
-  sendImage = async (userId: string, url: string) => {
-    try {
-      this.messenger.send(new Image({
-        url,
-      }), userId);
-    } catch (error) {
-      logger.log({
-        level: 'error',
-        message: `No se pudo enviar imagen: ${error}`,
-        social: "Facebook",
-        user: this.pageId
-      });
-    }
-    
+  sendImage = (userId: string, url: string) => {
+    return new Promise(async (resolve, reject) => {
+      try {
+        let res = await this.messenger.send(new Image({
+          url,
+        }), userId);
+        resolve(res);
+      } catch (error) {
+        logger.log({
+          level: 'error',
+          message: `No se pudo enviar imagen: ${error}`,
+          social: "Facebook",
+          user: this.pageId
+        });
+        reject(new Error("No se pudo subir el imagen a Facebook"));
+      }
+    });
   }
 
-  sendVideo = async (userId: string, url: string) => {
-    try {
-      this.messenger.send(new Video({
-        url,
-      }), userId);
-    } catch (error) {
-      logger.log({
-        level: 'error',
-        message: `No se pudo enviar video: ${error}`,
-        social: "Facebook",
-        user: this.pageId
-      });
-    }
+  sendVideo = (userId: string, url: string) => {
+    return new Promise(async (resolve, reject) => {
+      try {
+        let res = await this.messenger.send(new Video({
+          url,
+        }), userId);
+        resolve(res);
+      } catch (error) {
+        logger.log({
+          level: 'error',
+          message: `No se pudo enviar video: ${error}`,
+          social: "Facebook",
+          user: this.pageId
+        });
+        reject(new Error("No se pudo subir el video a Facebook"));
+      }
+    });
   }
 
-  sendFile = async (userId: string, url: string) => {
-    try {
-      this.messenger.send(new File({
-        url,
-      }), userId);
-    } catch (error) {
-      logger.log({
-        level: 'error',
-        message: `No se pudo enviar archivo: ${error}`,
-        social: "Facebook",
-        user: this.pageId
-      });
-    }
+  sendFile =(userId: string, url: string) => {
+    return new Promise(async (resolve, reject) => {
+      try {
+        let res = await this.messenger.send(new File({
+          url,
+        }), userId);
+        resolve(res);
+      } catch (error) {
+        logger.log({
+          level: 'error',
+          message: `No se pudo enviar archivo: ${error}`,
+          social: "Facebook",
+          user: this.pageId
+        });
+        reject(new Error("No se pudo subir el archivo a Facebook"));
+      }
+    })
   }
 }
