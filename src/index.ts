@@ -122,20 +122,22 @@ const main = async () => {
         }
       }
 
-      for (const facebookApp of facebookApps) {
-        const expressServer = new ExpressServer(facebookApp.appSecret, facebookApp.verifyToken);
+      if (process.env.PORT) {
+        for (const facebookApp of facebookApps) {
+          const expressServer = new ExpressServer(facebookApp.appSecret, facebookApp.verifyToken);
 
-        expressServer.on("facebookWebhook", (data) => {
-          const fb = foundSocial(facebookApp.appKey);
-          if (fb && fb instanceof Facebook) {
-            fb.handle(data);
-          } else {
-            logger.log({
-              level: 'warn',
-              message: `La clase con el appKey ${facebookApp.appKey} es incorrecta: ${fb}`
-            });
-          }
-        }) 
+          expressServer.on("facebookWebhook", (data) => {
+            const fb = foundSocial(facebookApp.appKey);
+            if (fb && fb instanceof Facebook) {
+              fb.handle(data);
+            } else {
+              logger.log({
+                level: 'warn',
+                message: `La clase con el appKey ${facebookApp.appKey} es incorrecta: ${fb}`
+              });
+            }
+          }) 
+        }
       }
   } catch (error) {
     logger.log({

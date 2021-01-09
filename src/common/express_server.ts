@@ -26,8 +26,8 @@ export default class ExpressServer extends EventEmitter {
 
     try {
       if (process.env.PRIVATE_KEY_PATH && process.env.CERTIFICATE_PATH) {
-        privateKey = fs.readFileSync(process.env.PRIVATE_KEY_PATH);
-        certificate = fs.readFileSync(process.env.CERTIFICATE_PATH);
+        privateKey = fs.readFileSync(process.env.PRIVATE_KEY_PATH, 'utf8');
+        certificate = fs.readFileSync(process.env.CERTIFICATE_PATH, 'utf8');
       }
     } catch (error) {
       logger.log({
@@ -37,7 +37,7 @@ export default class ExpressServer extends EventEmitter {
     }
     
 
-    //this.app.use(bodyParser.json({ verify: this.verifyFacebookRequestSignature }));
+    this.app.use(bodyParser.json({ verify: this.verifyFacebookRequestSignature }));
     this.app.use(bodyParser.urlencoded({ extended: true }));
     
     this.app.get('/', (req: any, res: any) => {
@@ -57,10 +57,6 @@ export default class ExpressServer extends EventEmitter {
     
     this.app.post('/webhook', (req: any, res: any) => {
       res.sendStatus(200);
-      logger.log({
-        level: 'debug',
-        message: `Se recibió: ${req.body}`
-      });
       this.emit("facebookWebhook", req.body);
       
     });
