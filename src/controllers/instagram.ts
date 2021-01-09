@@ -369,11 +369,25 @@ export default class Instagram extends EventEmitter {
       }
     } catch (error) {
       logger.log({
-        level: 'error',
-        message: `No se pudo enviar mensaje. Si viene con adjunto archivo puede estar dañado. Error: ${error}`,
+        level: 'warn',
+        message: error,
         social: "Instagram",
         user: `@${this.user}`
       });
+
+      let errorMessage = {
+        keyApp: this.appKey,
+        userKey: message.userKey,
+        msj: {
+          userName: message.userName,
+          type: "PV",
+          attachmentType: message.attachmentType,
+          attachmentUrl: message.attachmentUrl,
+          mensajeTexto: `ERROR: ${error}`,
+        },
+        type: "new_message"
+      }
+      this.emit('message', errorMessage);
     }
     
   }
@@ -453,7 +467,7 @@ export default class Instagram extends EventEmitter {
         const audio = await fetch(url);
         const audioBuffer = await audio.buffer();
         tmp.file((err: any, path: any, fd: any, cleanup: any) => {
-          if (err) reject(err);
+          if (err) {}
       
           appendFile(path, audioBuffer, () => {
             let tempFilePath = "temp/" + new Date().getTime() + ".mp4";
@@ -477,11 +491,11 @@ export default class Instagram extends EventEmitter {
                 });
                 
                 command.on('error', (err: any) => {
-                  logger.log({
-                    level: 'error',
-                    message: `Error en FFMPEG al procesar el audio: ${err}`
-                  });
-                  reject(err);
+                  if (err) {
+                    reject(err)
+                  } else {
+                    reject(new Error("Problema al transformar con ffmpeg"))
+                  }
                 });
 
                 command.on('end', () => {
@@ -503,7 +517,11 @@ export default class Instagram extends EventEmitter {
 
                 command.noVideo().duration(newDuration).save(tempFilePath); 
               } else {
-                reject(err)
+                if (err != null) {
+                  reject(err)
+                } else {
+                  reject(new Error("Problema al obtener metadata con ffmpeg"))
+                }
               }
             });
           });
@@ -532,92 +550,99 @@ export default class Instagram extends EventEmitter {
 
             new oldFfmpeg(path, async (err: any, video: any) => {
               if (!err) {
-                let duration = video.metadata.duration.seconds;
-                let width = video.metadata.video.resolution.w;
-                let height = video.metadata.video.resolution.h;
-                let aspect = video.metadata.video.aspect.value;
-                let fps = video.metadata.video.fps;
-                
-                let newSize = `${width}x${height}`;
-                let newAspect = aspect;
-                let newDuration = duration;
-                let newFps = fps;
+                if (video.metadata.filename && video.metadata.filename != "") {
+                  let duration = video.metadata.duration.seconds;
+                  let width = video.metadata.video.resolution.w;
+                  let height = video.metadata.video.resolution.h;
+                  let aspect = video.metadata.video.aspect.value;
+                  let fps = video.metadata.video.fps;
+                  
+                  let newSize = `${width}x${height}`;
+                  let newAspect = aspect;
+                  let newDuration = duration;
+                  let newFps = fps;
+                  
+                  let command = ffmpeg(path).format('mp4');
 
-                let command = ffmpeg(path).format('mp4');
-
-                if (width > 1080 || height > 1350 || aspect > 1.9 || aspect < 0.8) {
-                  if (aspect > 1.9) {
-                    if (width > 1080) {
-                      newSize = '1080x?';
-                      newAspect = 1.9;
-                    } else {
-                      newAspect = 1.9;
-                    }
-                  } else if (aspect < 0.8) {
-                    if (height > 1350) {
-                      newSize = '?x1350';
-                      newAspect = 0.8;
-                    } else {
-                      newAspect = 0.8;
-                    }
-                  } else {
-                    if (aspect > 1) {
+                  if (width > 1080 || height > 1350 || aspect > 1.9 || aspect < 0.8) {
+                    if (aspect > 1.9) {
                       if (width > 1080) {
                         newSize = '1080x?';
+                        newAspect = 1.9;
+                      } else {
+                        newAspect = 1.9;
                       }
-                    } else if (aspect <= 1) {
+                    } else if (aspect < 0.8) {
                       if (height > 1350) {
                         newSize = '?x1350';
+                        newAspect = 0.8;
+                      } else {
+                        newAspect = 0.8;
+                      }
+                    } else {
+                      if (aspect > 1) {
+                        if (width > 1080) {
+                          newSize = '1080x?';
+                        }
+                      } else if (aspect <= 1) {
+                        if (height > 1350) {
+                          newSize = '?x1350';
+                        }
                       }
                     }
+                    
                   }
-                  
-                }
 
-                if (duration > 60) {
-                  newDuration = 60;
-                }
+                  if (duration > 60) {
+                    newDuration = 60;
+                  }
 
-                if (fps > 25) {
-                  newFps = 25;
-                }
+                  if (fps > 25) {
+                    newFps = 25;
+                  }
 
-                logger.log({
-                  level: 'debug',
-                  message: `El video original tiene un tamaño ${newSize}, con relación de aspecto ${newAspect}, duración ${newDuration}, y ${newFps} FPS`,
-                  social: "Instagram",
-                  user: `@${this.user}`
-                });
-                
-                command.on('error', (err: any) => {
                   logger.log({
-                    level: 'error',
-                    message: `Error en FFMPEG al procesar el video`,
+                    level: 'debug',
+                    message: `El video original tiene un tamaño ${newSize}, con relación de aspecto ${newAspect}, duración ${newDuration}, y ${newFps} FPS`,
                     social: "Instagram",
                     user: `@${this.user}`
                   });
-                  reject(err);
-                });
-
-                command.on('end', () => {
-                  readFile(tempFilePath, async (err: any, data: Buffer) => {
-                    try {
-                      unlinkSync(tempFilePath);
-                    } catch (error) {
-                      
-                    } finally {
-                      if (err) reject(err);
-                      let result = await thread.broadcastVideo({
-                        video: data,
-                      });
-                      resolve(result);
+                  
+                  command.on('error', (err: any) => {
+                    if (err) {
+                      reject(err)
+                    } else {
+                      reject(new Error("Problema al transformar con ffmpeg"))
                     }
                   });
-                });
 
-                command.size(newSize).aspect(newAspect).autopad().fps(newFps).duration(newDuration).save(tempFilePath); 
+                  command.on('end', () => {
+                    readFile(tempFilePath, async (err: any, data: Buffer) => {
+                      try {
+                        unlinkSync(tempFilePath);
+                      } catch (error) {
+                        
+                      } finally {
+                        if (err) reject(err);
+                        let result = await thread.broadcastVideo({
+                          video: data,
+                        });
+                        resolve(result);
+                      }
+                    });
+                  });
+
+                  command.size(newSize).aspect(newAspect).autopad().fps(newFps).duration(newDuration).save(tempFilePath); 
+                } else {
+                  if (err) {
+                    reject(err)
+                  } else {
+                    reject(new Error("Problema al obtener metadata con ffmpeg"))
+                  }
+                  
+                }
               } else {
-                reject(err)
+                reject(new Error(`El archivo venia con fileName vacío, probablemente un archivo corrupto`));
               }
             });
           });
