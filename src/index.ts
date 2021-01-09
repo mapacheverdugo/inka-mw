@@ -122,8 +122,9 @@ const main = async () => {
         }
       }
 
-      if (process.env.PORT) {
+      
         for (const facebookApp of facebookApps) {
+          console.log(facebookApp.appSecret, facebookApp.verifyToken)
           const expressServer = new ExpressServer(facebookApp.appSecret, facebookApp.verifyToken);
 
           expressServer.on("facebookWebhook", (data) => {
@@ -136,8 +137,7 @@ const main = async () => {
                 message: `La clase con el appKey ${facebookApp.appKey} es incorrecta: ${fb}`
               });
             }
-          }) 
-        }
+          })
       }
   } catch (error) {
     logger.log({
