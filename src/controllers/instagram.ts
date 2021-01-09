@@ -99,7 +99,12 @@ export default class Instagram extends EventEmitter {
     let interval = secs * 1000;
 
     setInterval(async () => {
-      //if (showLogs) console.log(`Obteniendo solicitudes de mensaje...`);
+      logger.log({
+        level: 'silly',
+        message: `Obteniendo solicitudes de mensaje...`,
+        social: "Instagram",
+        user: `@${this.user}`
+      });
       try {
           const pendings = await this.ig.feed.directPending().items();
 

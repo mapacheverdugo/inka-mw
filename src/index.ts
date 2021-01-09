@@ -123,7 +123,6 @@ const main = async () => {
       }
 
       for (const facebookApp of facebookApps) {
-        console.log("facebookApp.appSecret", facebookApp.appSecret, "facebookApp.verifyToken", facebookApp.verifyToken)
         const expressServer = new ExpressServer(facebookApp.appSecret, facebookApp.verifyToken);
 
         expressServer.on("facebookWebhook", (data) => {

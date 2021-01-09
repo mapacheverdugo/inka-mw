@@ -11,7 +11,10 @@ export default class SockerServer extends EventEmitter {
     super();
 
     this.server.listen(port, () => {
-      console.log(`Servidor escuchando en: ${port}`);
+      logger.log({
+        level: 'debug',
+        message: `Servidor socket TCP escuchando en ${port}`
+      });
     });
       
     this.server.on('connection', (socket: any) => {

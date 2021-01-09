@@ -93,14 +93,12 @@ export default class ExpressServer extends EventEmitter {
           .update(buf)
           .digest('hex');
   
-        console.log(elements, signatureHash, expectedHash)
         if (signatureHash !== expectedHash) {
           //throw new Error('No se pudo validar la firma de Facebook');
         }
       }
       
     } else {
-      //console.log(req.headers)
       throw new Error('No se pudo validar la firma de Facebook');
     }
   };
