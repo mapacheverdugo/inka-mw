@@ -314,47 +314,68 @@ export default class Instagram extends EventEmitter {
           type: "new_message"
         });
       } else {
-        reject("Era un mensaje vacio")
+        resolve({
+          keyApp: this.appKey,
+          userKey,
+          msj: {
+            userName,
+            type: "PV",
+            attachmentType,
+            attachmentUrl,
+            mensajeTexto: "",
+          },
+          type: "new_message"
+        });
       }
     })
   }
 
   sendMessage = async (message: any) => {
-    let threads = await this.ig.feed.directInbox().records();
-    let thread;
+    try {
+      let threads = await this.ig.feed.directInbox().records();
+      let thread;
 
-    for (const t of threads) {
-      if (t.threadId == message.userKey) {
-        thread = t;
+      for (const t of threads) {
+        if (t.threadId == message.userKey) {
+          thread = t;
+        }
       }
+      
+      if (thread) {
+        if (message && message.type == "RESPONSE_MESSAGE") {
+          if (message.msj.attachmentType && message.msj.attachmentType != "" && message.msj.attachmentUrl && message.msj.attachmentUrl != "") {
+            logger.log({
+              level: 'debug',
+              message: `Se recibio adjunto de typo ${message.msj.attachmentType}`,
+              social: "Instagram",
+              user: `@${this.user}`
+
+            });
+            if (message.msj.attachmentType.startsWith(IMAGE_TYPE)) {
+              this.sendImage(thread, message.msj.attachmentUrl);
+            }
+            if (message.msj.attachmentType.startsWith(AUDIO_TYPE)) {
+              this.sendAudio(thread, message.msj.attachmentUrl);
+            }
+            if (message.msj.attachmentType.startsWith(VIDEO_TYPE)) {
+              this.sendVideo(thread, message.msj.attachmentUrl);
+            }
+          }
+
+          if (message.msj.mensajeTexto && message.msj.mensajeTexto != "") {
+            this.sendText(thread, message.msj.mensajeTexto)
+          }
+        }
+      }
+    } catch (error) {
+      logger.log({
+        level: 'error',
+        message: `No se pudo enviar mensaje. Si viene con adjunto archivo puede estar dañado. Error: ${error}`,
+        social: "Instagram",
+        user: `@${this.user}`
+      });
     }
     
-    if (thread) {
-      if (message && message.type == "RESPONSE_MESSAGE") {
-        if (message.msj.attachmentType && message.msj.attachmentType != "" && message.msj.attachmentUrl && message.msj.attachmentUrl != "") {
-          logger.log({
-            level: 'debug',
-            message: `Se recibio adjunto de typo ${message.msj.attachmentType}`,
-            social: "Instagram",
-            user: `@${this.user}`
-
-          });
-          if (message.msj.attachmentType.startsWith(IMAGE_TYPE)) {
-            this.sendImage(thread, message.msj.attachmentUrl);
-          }
-          if (message.msj.attachmentType.startsWith(AUDIO_TYPE)) {
-            this.sendAudio(thread, message.msj.attachmentUrl);
-          }
-          if (message.msj.attachmentType.startsWith(VIDEO_TYPE)) {
-            this.sendVideo(thread, message.msj.attachmentUrl);
-          }
-        }
-
-        if (message.msj.mensajeTexto && message.msj.mensajeTexto != "") {
-          this.sendText(thread, message.msj.mensajeTexto)
-        }
-      }
-    }
   }
 
   sendText = async (thread: DirectThreadEntity, text: string) => {
@@ -432,7 +453,7 @@ export default class Instagram extends EventEmitter {
         const audio = await fetch(url);
         const audioBuffer = await audio.buffer();
         tmp.file((err: any, path: any, fd: any, cleanup: any) => {
-          if (err) throw err;
+          if (err) reject(err);
       
           appendFile(path, audioBuffer, () => {
             let tempFilePath = "temp/" + new Date().getTime() + ".mp4";
@@ -471,7 +492,7 @@ export default class Instagram extends EventEmitter {
                       
                     } finally {
                       tmp.setGracefulCleanup();
-                      if (err) throw err;
+                      if (err) reject(err);
                       let result = await thread.broadcastVoice({
                         file: data,
                       });
@@ -504,7 +525,7 @@ export default class Instagram extends EventEmitter {
         const video = await fetch(url);
         const videoBuffer = await video.buffer();
         tmp.file((err: any, path: any, fd: any, cleanup: any) => {
-          if (err) throw err;
+          if (err) reject(err);
       
           appendFile(path, videoBuffer, () => {
             let tempFilePath = "temp/" + new Date().getTime() + ".mp4";
@@ -585,7 +606,7 @@ export default class Instagram extends EventEmitter {
                     } catch (error) {
                       
                     } finally {
-                      if (err) throw err;
+                      if (err) reject(err);
                       let result = await thread.broadcastVideo({
                         video: data,
                       });

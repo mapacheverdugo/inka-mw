@@ -211,23 +211,32 @@ export default class FacebookPage extends EventEmitter {
   }
 
   sendMessage = async (message: any) => {
-    if (message && message.type == "RESPONSE_MESSAGE") {
-      if (message.msj.attachmentType && message.msj.attachmentType != "" && message.msj.attachmentUrl && message.msj.attachmentUrl != "") {
-        if (message.msj.attachmentType.startsWith(IMAGE_TYPE)) {
-          this.sendImage(message.userKey, message.msj.attachmentUrl);
-        } else if (message.msj.attachmentType.startsWith(AUDIO_TYPE)) {
-          this.sendAudio(message.userKey, message.msj.attachmentUrl);
-        } else if (message.msj.attachmentType.startsWith(VIDEO_TYPE)) {
-          this.sendVideo(message.userKey, message.msj.attachmentUrl);
-        } else {
-          this.sendFile(message.userKey, message.msj.attachmentUrl);
+    try {
+      if (message && message.type == "RESPONSE_MESSAGE") {
+        if (message.msj.attachmentType && message.msj.attachmentType != "" && message.msj.attachmentUrl && message.msj.attachmentUrl != "") {
+          if (message.msj.attachmentType.startsWith(IMAGE_TYPE)) {
+            this.sendImage(message.userKey, message.msj.attachmentUrl);
+          } else if (message.msj.attachmentType.startsWith(AUDIO_TYPE)) {
+            this.sendAudio(message.userKey, message.msj.attachmentUrl);
+          } else if (message.msj.attachmentType.startsWith(VIDEO_TYPE)) {
+            this.sendVideo(message.userKey, message.msj.attachmentUrl);
+          } else {
+            this.sendFile(message.userKey, message.msj.attachmentUrl);
+          }
+          
         }
         
+        if (message.msj.mensajeTexto && message.msj.mensajeTexto != "") {
+          this.sendText(message.userKey, message.msj.mensajeTexto)
+        }
       }
-      
-      if (message.msj.mensajeTexto && message.msj.mensajeTexto != "") {
-        this.sendText(message.userKey, message.msj.mensajeTexto)
-      }
+    } catch (error) {
+      logger.log({
+        level: 'error',
+        message: `No se pudo enviar mensaje. Si viene con adjunto archivo puede estar dañado. Error: ${error}`,
+        social: "Instagram",
+        user: this.pageId
+      });
     }
   }
 
