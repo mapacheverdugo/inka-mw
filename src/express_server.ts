@@ -59,7 +59,7 @@ export default class ExpressServer extends EventEmitter {
       res.sendStatus(200);
       logger.log({
         level: 'debug',
-        message: `Se recibió: ${req.body}`
+        message: `Se recibió: ${JSON.stringify(req.body)}`
       });
       this.emit("facebookWebhook", req.body);
       
