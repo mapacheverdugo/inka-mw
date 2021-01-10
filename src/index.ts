@@ -125,7 +125,7 @@ const main = async () => {
       
         for (const facebookApp of facebookApps) {
           console.log(facebookApp.appSecret, facebookApp.verifyToken)
-          const expressServer = new ExpressServer(facebookApp.appSecret, facebookApp.verifyToken);
+          const expressServer = new ExpressServer(facebookApp.verifyToken, facebookApp.appSecret);
 
           expressServer.on("facebookWebhook", (data) => {
             const fb = foundSocial(facebookApp.appKey);
