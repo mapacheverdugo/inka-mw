@@ -37,7 +37,7 @@ export default class ExpressServer extends EventEmitter {
     }
     
 
-    //this.app.use(bodyParser.json({ verify: this.verifyFacebookRequestSignature }));
+    this.app.use(bodyParser.json({ verify: this.verifyFacebookRequestSignature }));
     this.app.use(bodyParser.urlencoded({ extended: true }));
     
     this.app.get('/', (req: any, res: any) => {
@@ -47,6 +47,7 @@ export default class ExpressServer extends EventEmitter {
     });
     
     this.app.get('/webhook', (req: any, res: any) => {
+      console.log(req.query['hub.mode'], req.query['hub.verify_token'], this.verifyToken),
       if (req.query['hub.mode'] === 'subscribe' &&
         req.query['hub.verify_token'] === this.verifyToken) {
         res.send(req.query['hub.challenge']);
