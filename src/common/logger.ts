@@ -19,7 +19,7 @@ export default createLogger({
                         log += `[${info.social} - ${info.user}]`
                     }
                     log += " ";
-                    log += info.message.trim()
+                    log += info.message.toString().trim()
                     return log;
                 })
             ),
