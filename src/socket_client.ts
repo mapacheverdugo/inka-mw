@@ -30,7 +30,7 @@ export default class SocketClient extends EventEmitter{
         this.client.write(messageReady);
         logger.log({
           level: 'debug',
-          message: `Enviado: ${message}`
+          message: `Enviado: ${JSON.stringify(message)}`
         });
         this.client.end();
   

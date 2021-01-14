@@ -11,15 +11,15 @@ export default createLogger({
                 format.colorize(),
                 format.printf((info: any) => {
                     const rawLevel = info.level.slice(5, 9);
-                    const level = info.level.replace(rawLevel, rawLevel.toUpperCase())
+                    const level = info.level.replace(rawLevel, rawLevel.toUpperCase());
         
                     let log = `[${level}]`;
                     if (info.social && info.user) {
                         log += " ";
-                        log += `[${info.social} - ${info.user}]`
+                        log += `[${info.social} - ${info.user}]`;
                     }
                     log += " ";
-                    log += info.message.trim()
+                    log += info.message.toString().trim();
                     return log;
                 })
             ),
@@ -32,13 +32,13 @@ export default createLogger({
                     let log = `${info.timestamp} [${info.level.toUpperCase()}]`;
                     if (info.social && info.user) {
                         log += " ";
-                        log += `[${info.social} - ${info.user}]`
+                        log += `[${info.social} - ${info.user}]`;
                     }
                     log += " ";
-                    log += info.message.trim()
+                    log += info.message.toString().trim()
                     return log;
                 })
-            ),
-        }),
-    ],
+            )
+        })
+    ]
 });
