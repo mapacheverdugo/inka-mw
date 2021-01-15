@@ -25,7 +25,7 @@ entrar al directorio
 crear el archivo `node.conf` y agregar la siguiente linea
 
 ```
-SSLProxyEngine on # `Esto solamente va si el destino es para https, ejemplo https://inka.aware.cl:3000`
+SSLProxyEngine on # Esto solamente va si el destino es para https, ejemplo https://inka.aware.cl:3000
 ProxyPass /node http://localhost:3000
 ```
 
