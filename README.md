@@ -178,7 +178,8 @@ Además de una página, se necesita tener una **aplicación** de Facebook. En ca
  
  #### 3.1 Instagram
  
- 1. Puede ocurrir que Instagram bloquee los intentos se login, esto es cuando aparece un mensaje como este:
+ 1. Puede ocurrir que Instagram bloquee los intentos se login, esto es cuando aparece un mensaje como éste:
+
  `[ERROr] [Instagram - @aware_callmanager] Error al inicializar: IgCheckpointError: POST /api/v1/accounts/login/ - 400 Bad Request; challenge_required`
 
  Se debe abrir sesion en un telefono u otro navegador para resolverlo, ya que enviará un codigo a la cuenta de correo que esta inscrito dicha cuenta.
