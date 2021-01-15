@@ -9,7 +9,23 @@ Software encargado de conectar distintas redes sociales, como Instagram y Facebo
 - `npm`
 - `ffmpeg`
 
-### 1.2. Variables de entorno
+### 1.2. Proxy reverso node
+Activar el proxy reverso para node
+
+entrar al directorio
+/etc/apache2/conf-available
+
+crear el archivo `node.conf` y agregar la siguiente linea
+
+`ProxyPass /node http://localhost:3000`
+
+ahora activarlo
+```
+a2enconf node
+a2enmod proxy_http
+service apache2 restart
+```
+### 1.3. Variables de entorno
 El archivo de configuración se encuentra en la raíz del proyecto con el nombre de `.env`. Acá un ejemplo:
 ```
 CORE_PORT=9090
@@ -52,7 +68,7 @@ PGPORT=5432
 | `PGDATABASE`             | Nombre de la base de datos PostgreSQL.                                                                                    |
 | `PGPORT`                 | Puerto de la base de datos PostgreSQL.                                                                                    |
 
-### 1.3. Instrucciones
+### 1.4. Instrucciones
 
 1. Instalar librerías y dependencias
 ```bash
