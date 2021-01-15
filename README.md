@@ -174,13 +174,13 @@ Además de una página, se necesita tener una **aplicación** de Facebook. En ca
 | `app_data7` | IP o host del Core. Ej: `123.15.12.143` |
 
  
- #### 3. Problemas que pueden ocurrir 
+ ## 3. Problemas que pueden ocurrir 
  
- ## 3.1 Instagram
+ #### 3.1 Instagram
  
  1. Puede ocurrir que Instagram bloquee los intentos se login, esto es cuando aparece un mensaje como este:
  `[ERROr] [Instagram - @aware_callmanager] Error al inicializar: IgCheckpointError: POST /api/v1/accounts/login/ - 400 Bad Request; challenge_required`
 
  Se debe abrir sesion en un telefono u otro navegador para resolverlo, ya que enviará un codigo a la cuenta de correo que esta inscrito dicha cuenta.
 
- ## 3.2 Facebook
+ #### 3.2 Facebook
