@@ -9,7 +9,7 @@ Software encargado de conectar distintas redes sociales, como Instagram y Facebo
 - `npm`
 - `ffmpeg`
 
-Instalacion Node 15.X
+Instalacion Node 15.X para Debian
 
 ```
 curl -sL https://deb.nodesource.com/setup_15.x | bash -
