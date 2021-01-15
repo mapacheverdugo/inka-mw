@@ -17,7 +17,9 @@ entrar al directorio
 
 crear el archivo `node.conf` y agregar la siguiente linea
 
-```ProxyPass /node http://localhost:3000```
+```
+ProxyPass /node http://localhost:3000
+```
 
 ahora activarlo
 ```
