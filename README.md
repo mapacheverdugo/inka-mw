@@ -13,11 +13,11 @@ Software encargado de conectar distintas redes sociales, como Instagram y Facebo
 Activar el proxy reverso para node
 
 entrar al directorio
-/etc/apache2/conf-available
+`/etc/apache2/conf-available`
 
 crear el archivo `node.conf` y agregar la siguiente linea
 
-`ProxyPass /node http://localhost:3000`
+```ProxyPass /node http://localhost:3000```
 
 ahora activarlo
 ```
