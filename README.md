@@ -9,6 +9,13 @@ Software encargado de conectar distintas redes sociales, como Instagram y Facebo
 - `npm`
 - `ffmpeg`
 
+Instalacion Node 15.X
+
+```
+curl -sL https://deb.nodesource.com/setup_15.x | bash -
+apt-get install -y nodejs
+```
+
 ### 1.2. Proxy reverso node
 Activar el proxy reverso para node
 
