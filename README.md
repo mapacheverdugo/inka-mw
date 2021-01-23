@@ -9,7 +9,33 @@ Software encargado de conectar distintas redes sociales, como Instagram y Facebo
 - `npm`
 - `ffmpeg`
 
-### 1.2. Variables de entorno
+Instalacion Node 15.X para Debian
+
+```
+curl -sL https://deb.nodesource.com/setup_15.x | bash -
+apt-get install -y nodejs
+```
+
+### 1.2. Proxy reverso node
+Activar el proxy reverso para node
+
+entrar al directorio
+`/etc/apache2/conf-available`
+
+crear el archivo `node.conf` y agregar la siguiente linea
+
+```
+SSLProxyEngine on # Esto solamente va si el destino es para https, ejemplo https://inka.aware.cl:3000
+ProxyPass /node http://localhost:3000
+```
+
+ahora activarlo
+```
+a2enconf node
+a2enmod proxy_http
+service apache2 restart
+```
+### 1.3. Variables de entorno
 El archivo de configuración se encuentra en la raíz del proyecto con el nombre de `.env`. Acá un ejemplo:
 ```
 CORE_PORT=9090
@@ -48,7 +74,7 @@ PGPORT=5432
 | `PGDATABASE`             | Nombre de la base de datos PostgreSQL.                                                                                    |
 | `PGPORT`                 | Puerto de la base de datos PostgreSQL.                                                                                    |
 
-### 1.3. Instrucciones
+### 1.4. Instrucciones
 
 1. Instalar librerías y dependencias
 ```bash
@@ -217,3 +243,14 @@ Además de una página, se necesita tener una **aplicación** de Facebook. En ca
 | `app_data7` | IP o host del Core. Ej: `123.15.12.143` |
 
  
+ ## 3. Problemas que pueden ocurrir 
+ 
+ #### 3.1 Instagram
+ 
+ 1. Puede ocurrir que Instagram bloquee los intentos se login, esto es cuando aparece un mensaje como éste:
+
+ `[ERROr] [Instagram - @aware_callmanager] Error al inicializar: IgCheckpointError: POST /api/v1/accounts/login/ - 400 Bad Request; challenge_required`
+
+ Se debe abrir sesion en un telefono u otro navegador para resolverlo, ya que enviará un codigo a la cuenta de correo que esta inscrito dicha cuenta.
+
+ #### 3.2 Facebook
