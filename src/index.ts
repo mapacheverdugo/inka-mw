@@ -59,10 +59,36 @@ const getRows = async () => {
 
 const main = async () => {
   try {
+    const expressServer = new ExpressServer();
+
     if (process.env.INSTAGRAM_PORT) {
       const instagramSocket = new SockerServer(parseInt(process.env.INSTAGRAM_PORT));
       instagramSocket.on("message", (message) => {
         sendToUser(message);
+      });
+
+      expressServer.on("instagramVerification", (appKey: any, code: string) => {
+        const ig = foundSocial(appKey);
+        if (ig && ig instanceof Instagram) {
+          ig.verificateLogin(code);
+        } else {
+          logger.log({
+            level: 'warn',
+            message: `La clase con el appKey ${appKey} es incorrecta: ${ig}`
+          });
+        }
+      });
+
+      expressServer.on("instagramTwoFactor", (appKey: any, code: string) => {
+        const ig = foundSocial(appKey);
+        if (ig && ig instanceof Instagram) {
+          ig.twoFactorLogin(code);
+        } else {
+          logger.log({
+            level: 'warn',
+            message: `La clase con el appKey ${appKey} es incorrecta: ${ig}`
+          });
+        }
       });
     }
 
@@ -70,6 +96,18 @@ const main = async () => {
       const facebookSocket = new SockerServer(parseInt(process.env.FACEBOOK_PORT));
       facebookSocket.on("message", (message) => {
         sendToUser(message);
+      });
+
+      expressServer.on("facebookWebhook", (appKey: any, data: any) => {
+        const fb = foundSocial(appKey);
+        if (fb && fb instanceof Facebook) {
+          fb.handle(data);
+        } else {
+          logger.log({
+            level: 'warn',
+            message: `La clase con el appKey ${appKey} es incorrecta: ${fb}`
+          });
+        }
       });
     }
 
@@ -108,36 +146,17 @@ const main = async () => {
           const coreHost = row.app_data7.trim();
           let fb = new Facebook(appKey, pageId, accessToken);
           fb.init();
-
+  
           fb.on("message", (message: any) => {
             const socketClient = new SocketClient(coreHost);
             socketClient.write(message);
           });
           fbs.push(fb);
-
-          let alreadyHasAppSecret = facebookApps.filter(f => f.appSecret == appSecret)[0];
-          if (!alreadyHasAppSecret) {
-            facebookApps.push({appKey, verifyToken, appSecret});
-          }
+  
+          facebookApps.push({appKey, verifyToken, appSecret});
+  
+          expressServer.facebookApps = facebookApps;
         }
-      }
-
-      
-        for (const facebookApp of facebookApps) {
-          console.log(facebookApp.appSecret, facebookApp.verifyToken)
-          const expressServer = new ExpressServer(facebookApp.verifyToken, facebookApp.appSecret);
-
-          expressServer.on("facebookWebhook", (data) => {
-            const fb = foundSocial(facebookApp.appKey);
-            if (fb && fb instanceof Facebook) {
-              fb.handle(data);
-            } else {
-              logger.log({
-                level: 'warn',
-                message: `La clase con el appKey ${facebookApp.appKey} es incorrecta: ${fb}`
-              });
-            }
-          })
       }
   } catch (error) {
     logger.log({

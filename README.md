@@ -16,8 +16,6 @@ CORE_PORT=9090
 LOG_LEVEL=info
 
 PORT=3000
-PRIVATE_KEY_PATH=/etc/ssl/demo.host.cl/privkey.pem
-CERTIFICATE_PATH=/etc/ssl/demo.host.cl/cert.pem
 
 FACEBOOK_VALUE=Facebook
 FACEBOOK_PORT=9021
@@ -39,11 +37,9 @@ PGPORT=5432
 | `CORE_PORT`              | Puerto del socket TCP del Core.                                                                                           |
 | `PORT`                   | Puerto donde correrá la API HTTP que donde se conectaran los webhook de Facebook.                                         |
 | `LOG_LEVEL`              | Tipo de detalles de log. Por defecto `info`. Más información [acá](https://www.npmjs.com/package/winston#logging-levels). |
-| `PRIVATE_KEY_PATH`       | Ubicación de la llave privada del certificado SSL.                                                                        |
-| `CERTIFICATE_PATH`       | Ubicación del certificado SLL.                                                                                            |
-| `FACEBOOK_VALUE`         | Valor en la tabla `inka_app` de las aplicaciones Facebook. Por defecto es `Facebook`.                                     |
+| `FACEBOOK_VALUE`         | Valor en la tabla `inka_app` de las aplicaciones Facebook. Por defecto debe ser `Facebook`.                               |
 | `FACEBOOK_PORT`          | Puerto donde correrá el servido socket TCP para recibir mensajes de Facebook.                                             |
-| `INSTAGRAM_VALUE`        | Valor en la tabla `inka_app` de las aplicaciones Instagram. Por defecto es `Instagram`.                                   |
+| `INSTAGRAM_VALUE`        | Valor en la tabla `inka_app` de las aplicaciones Instagram. Por defecto debe ser `Instagram`.                             |
 | `INSTAGRAM_PORT`         | Puerto donde correrá el servido socket TCP para recibir mensajes de Instagram.                                            |
 | `INSTAGRAM_SEC_INTERVAL` | Intervalo en segundos que define cada cuanto se procesarán las "solicitudes de mensajes" en Instagram.                    |
 | `PGUSER`                 | Usuario de la base de datos PostgreSQL.                                                                                   |
@@ -77,6 +73,78 @@ npm start
 | `app_data2` | Nombre de usuario sin `@`. Ej: `usuario_empresa` |
 | `app_data3` | Contraseña de inicio de sesión. Ej: `3gja70#2df` |
 | `app_data7` | IP o host del Core. Ej: `123.15.12.143` |
+
+#### Autenticación de dos factores (2FA)
+
+Cuando una cuenta tenga activada la autenticación de dos factores, se deberá enviar un código adicional para iniciar sesión a través de una API HTTP montada dentro del mismo servidor.
+
+1. Al iniciar el programa e intentar iniciar sesión el programa arrojará un mensaje como este:
+
+```bash
+Requiere 2FA, enviando código por SMS...
+```
+2. En caso de tener 2FA con SMS, enviará automáticamente un código de verificación.
+3. Se deberá enviar el código del SMS, o en su defector del generador de código de autenticación, al programa en la siguiente petición `POST` al endpoint `/instagram/login/2fa` para finalizar el inicio de sesión.
+
+```
+POST /instagram/login/2fa HTTP/1.1
+Content-Type: application/json
+
+{
+    "appKey": "usuario_empresa-ig",     // Correspondiente al appKey definido anteriormente en la base de datos.
+    "code": "123456"                    // Correspondiente al código del 2FA
+}
+```
+
+Lo que arrojará una respuesta como la siguiente
+
+```json
+{
+    "appName": "Instagram",
+    "appKey": "usuario_empresa-ig",
+    "type": "2fa",
+    "message": "Se envió la petición correctamente. Revisa los logs."
+}
+```
+
+4. Lo que significará que se recibieron correctamente los datos, sin embargo se sugiere revisar los logs para saber si el inicio se completó satisfactoriamente.
+
+#### Verificación de inicio de sesión
+
+> Una cuenta que tenga activada 2FA puede requerir verificación adicional, es decir, primero habrá que completar el proceso de 2FA y luego este proceso de verificación
+
+Cuando el servidor se encuentra en una ubicación que Instagram considera sospechosa, se deberá enviar un código adicional para iniciar sesión a través de una API HTTP montada dentro del mismo servidor.
+
+1. Al iniciar el programa e intentar iniciar sesión el programa arrojará un mensaje como este:
+
+```bash
+Requiere verificación, enviando código al correo...
+```
+2. Enviará automáticamente un código de verificación.
+3. Se deberá enviar ese código al programa en la siguiente petición `POST` al endpoint `/instagram/login/verification` para finalizar el inicio de sesión.
+
+```
+POST /instagram/login/verification HTTP/1.1
+Content-Type: application/json
+
+{
+    "appKey": "usuario_empresa-ig",     // Correspondiente al appKey definido anteriormente en la base de datos.
+    "code": "123456"                    // Correspondiente al código recibido por correo
+}
+```
+
+Lo que arrojará una respuesta como la siguiente
+
+```json
+{
+    "appName": "Instagram",
+    "appKey": "usuario_empresa-ig",
+    "type": "verification",
+    "message": "Se envió la petición correctamente. Revisa los logs."
+}
+```
+
+4. Lo que significará que se recibieron correctamente los datos, sin embargo se sugiere revisar los logs para saber si el inicio se completó satisfactoriamente.
 
 
 ### 2.2. Facebook

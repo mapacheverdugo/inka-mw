@@ -15,7 +15,7 @@ import {
     MessageSyncMessage,
     IgApiClientMQTT
 } from 'instagram_mqtt';
-import { IgApiClient, DirectThreadEntity, DirectInboxFeedResponseItemsItem } from "instagram-private-api";
+import { IgApiClient, DirectThreadEntity, DirectInboxFeedResponseItemsItem, IgCheckpointError, IgLoginTwoFactorRequiredError } from "instagram-private-api";
 
 import logger from "../common/logger";
 
@@ -27,6 +27,7 @@ export default class Instagram extends EventEmitter {
   appKey: string;
   user: string;
   pass: string;
+  twoFactorData: any;
   ig: IgApiClientMQTT = withFbnsAndRealtime(new IgApiClient());
 
   constructor(appKey: string, user: string, pass: string) {
@@ -42,22 +43,6 @@ export default class Instagram extends EventEmitter {
     try {
       await this.login();
       
-      
-
-      await this.ig.realtime.connect({
-        graphQlSubs: [
-          GraphQLSubscriptions.getAppPresenceSubscription(),
-          GraphQLSubscriptions.getDirectStatusSubscription(),
-          GraphQLSubscriptions.getDirectTypingSubscription(this.ig.state.cookieUserId),
-          GraphQLSubscriptions.getAsyncAdSubscription(this.ig.state.cookieUserId),
-        ],
-        skywalkerSubs: [
-          SkywalkerSubscriptions.directSub(this.ig.state.cookieUserId),
-          SkywalkerSubscriptions.liveSub(this.ig.state.cookieUserId)
-        ],
-        irisData: await this.ig.feed.directInbox().request(),
-        connectOverrides: {},
-      });
       this.startListenAndAprovePendings();
       this.startListener();
     } catch (error) {
@@ -88,11 +73,95 @@ export default class Instagram extends EventEmitter {
           reject(new Error("Falta usuario o contraseña"));
         }
       } catch (error) {
-        reject(error);
+        if (error instanceof IgCheckpointError) {
+          logger.log({
+            level: 'warn',
+            message: `Requiere verificación, enviando código al correo...`,
+            social: "Instagram",
+            user: `@${this.user}`
+          });
+          await this.ig.challenge.selectVerifyMethod("1", false);
+        } else if (error instanceof IgLoginTwoFactorRequiredError) {
+          const { username, totp_two_factor_on, two_factor_identifier } = error.response.body.two_factor_info;
+          const verificationMethod = totp_two_factor_on ? '0' : '1';
+
+          this.twoFactorData = {
+            verificationMethod,
+            username,
+            twoFactorIdentifier: two_factor_identifier
+          }
+
+          logger.log({
+            level: 'warn',
+            message: `Requiere 2FA, enviando código por ${verificationMethod === '1' ? 'SMS' : 'TOTP'}...`,
+            social: "Instagram",
+            user: `@${this.user}`
+          });
+        } else {
+          reject(error);
+        }
+        
       }
       
     });
   }
+
+  verificateLogin = (code: string) => {
+    return new Promise(async (resolve, reject) => {
+      try {
+        logger.log({
+          level: 'info',
+          message: `Intentando verificar el inicio de sesión...`,
+          social: "Instagram",
+          user: `@${this.user}`
+        });
+      
+        await this.ig.challenge.sendSecurityCode(code);
+
+        this.startListenAndAprovePendings();
+        this.startListener();
+      } catch (error) {
+        reject(error);
+      }
+    });
+  }
+
+  twoFactorLogin = (code: string) => {
+    return new Promise(async (resolve, reject) => {
+      try {
+        logger.log({
+          level: 'info',
+          message: `Intentando verificar el inicio de sesión...`,
+          social: "Instagram",
+          user: `@${this.user}`
+        });
+      
+        await this.ig.account.twoFactorLogin({
+          username: this.twoFactorData.username,
+          verificationCode: code,
+          twoFactorIdentifier: this.twoFactorData.twoFactorIdentifier,
+          verificationMethod: this.twoFactorData.verificationMethod, // '1' = SMS (default); '0' = TOTP (google auth por ejemplo)
+        });
+
+        this.startListenAndAprovePendings();
+        this.startListener();
+      } catch (error) {
+        if (error instanceof IgCheckpointError) {
+          logger.log({
+            level: 'warn',
+            message: `Requiere verificación, enviando código al correo...`,
+            social: "Instagram",
+            user: `@${this.user}`
+          });
+          await this.ig.challenge.selectVerifyMethod("1", false);
+        } else {
+          reject(error);
+        }
+      }
+    });
+  }
+
+  
 
   startListenAndAprovePendings = () => {
     let secs = process.env.INSTAGRAM_SEC_INTERVAL ? parseInt(process.env.INSTAGRAM_SEC_INTERVAL) : 30
@@ -147,6 +216,21 @@ export default class Instagram extends EventEmitter {
     });
 
     try {
+      await this.ig.realtime.connect({
+        graphQlSubs: [
+          GraphQLSubscriptions.getAppPresenceSubscription(),
+          GraphQLSubscriptions.getDirectStatusSubscription(),
+          GraphQLSubscriptions.getDirectTypingSubscription(this.ig.state.cookieUserId),
+          GraphQLSubscriptions.getAsyncAdSubscription(this.ig.state.cookieUserId),
+        ],
+        skywalkerSubs: [
+          SkywalkerSubscriptions.directSub(this.ig.state.cookieUserId),
+          SkywalkerSubscriptions.liveSub(this.ig.state.cookieUserId)
+        ],
+        irisData: await this.ig.feed.directInbox().request(),
+        connectOverrides: {},
+      });
+
       let userId = await this.ig.user.getIdByUsername(this.user);
 
       this.ig.realtime.on('message', async (data) => {
