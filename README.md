@@ -85,6 +85,14 @@ npm install
 ```bash
 npm start
 ```
+4. Si se desea reinstalar, primeo se deben desinstalar todas las librerías con:
+```bash
+rm -rf package-lock.json node_modules/
+```
+y luego instalarlas nuevamente.
+```bash
+npm install
+```
 
 ## 2. Configuración
 
