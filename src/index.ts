@@ -117,17 +117,19 @@ const main = async () => {
       for (const row of rows) {
         if (row.app_name.toLowerCase().trim() == process.env.INSTAGRAM_VALUE?.toLowerCase().trim()) {
           try {
-            const appKey = row.app_data1.trim();
-            const user = row.app_data2.trim();
-            const password = row.app_data3.trim();
-            const coreHost = row.app_data7.trim();
-            let ig = new Instagram(appKey, user, password);
-            ig.init();
-            ig.on("message", (message: any) => {
-              const socketClient = new SocketClient(coreHost);
-              socketClient.write(message);
-            });
-            igs.push(ig);
+            const appKey = row.app_data1 ? row.app_data1.trim() : null;;
+            const user = row.app_data2 ? row.app_data2.trim() : null;
+            const password = row.app_data3 ? row.app_data3.trim() : null;
+            const coreHost = row.app_data7 ? row.app_data7.trim() : null;
+            if (appKey && user && password && coreHost) {
+              let ig = new Instagram(appKey, user, password);
+              ig.init();
+              ig.on("message", (message: any) => {
+                const socketClient = new SocketClient(coreHost);
+                socketClient.write(message);
+              });
+              igs.push(ig);
+            }
           } catch (error) {
             logger.log({
               level: 'error',
@@ -138,20 +140,22 @@ const main = async () => {
         }
   
         if (row.app_name.toLowerCase().trim() == process.env.FACEBOOK_VALUE?.toLowerCase().trim()) {
-          const appKey = row.app_data1.trim();
-          const pageId = row.app_data2.trim();
-          const accessToken = row.app_data3.trim();
-          const verifyToken = row.app_data4.trim();
-          const appSecret = row.app_data5.trim();
-          const coreHost = row.app_data7.trim();
-          let fb = new Facebook(appKey, pageId, accessToken);
-          fb.init();
-  
-          fb.on("message", (message: any) => {
-            const socketClient = new SocketClient(coreHost);
-            socketClient.write(message);
-          });
-          fbs.push(fb);
+          const appKey = row.app_data1 ? row.app_data1.trim() : null;
+          const pageId = row.app_data2 ? row.app_data2.trim() : null;
+          const accessToken = row.app_data3 ? row.app_data3.trim() : null;
+          const verifyToken = row.app_data4 ? row.app_data4.trim() : null;
+          const appSecret = row.app_data5 ? row.app_data5.trim() : null;
+          const coreHost = row.app_data7 ? row.app_data7.trim() : null;
+          if (appKey && pageId && accessToken && verifyToken && appSecret && coreHost) {
+            let fb = new Facebook(appKey, pageId, accessToken);
+            fb.init();
+    
+            fb.on("message", (message: any) => {
+              const socketClient = new SocketClient(coreHost);
+              socketClient.write(message);
+            });
+            fbs.push(fb);
+          }
   
           facebookApps.push({appKey, verifyToken, appSecret});
   

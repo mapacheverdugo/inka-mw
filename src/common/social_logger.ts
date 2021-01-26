@@ -3,9 +3,22 @@ require('dotenv').config()
 import { createLogger, transports } from 'winston';
 import { format } from 'logform';
 
+const Postgres = require('./pg_transport');
+
 export default createLogger({
     level: process.env.LOG_LEVEL ? process.env.LOG_LEVEL : "info",
     transports: [
+        new Postgres({
+            connectionString: `postgres://${process.env.PGUSER}:${process.env.PGPASSWORD}@${process.env.PGHOST}:${process.env.PGPORT}/${process.env.PGDATABASE}`,
+            level: 'info',
+            poolConfig: {
+              connectionTimeoutMillis: 0,
+              idleTimeoutMillis: 0,
+              max: 10
+            },
+            tableName: 'inka_logs',
+
+        }),
         new transports.Console({
             format: format.combine(
                 format.colorize(),

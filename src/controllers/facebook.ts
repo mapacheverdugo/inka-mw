@@ -2,7 +2,7 @@ import {EventEmitter} from "events";
 
 const { Messenger, Text, Audio, Video, Image, File } = require('fbmessenger');
 
-import logger from "../common/logger";
+import logger from "../common/social_logger";
 
 const IMAGE_TYPE = "image";
 const VIDEO_TYPE = "video";
@@ -32,7 +32,8 @@ export default class FacebookPage extends EventEmitter {
         level: 'error',
         message: `Error al inicializar: ${error}`,
         social: "Facebook",
-        user: this.pageId
+        user: this.pageId,
+        appKey: this.appKey
       });
     }
   }
@@ -46,7 +47,8 @@ export default class FacebookPage extends EventEmitter {
       level: 'info',
       message: `Acceso correcto. Escuchando mensajes...`,
       social: "Facebook",
-      user: this.pageId
+      user: this.pageId,
+      appKey: this.appKey
     });
 
     this.messenger.on('message', async (message: any) => {
@@ -63,7 +65,8 @@ export default class FacebookPage extends EventEmitter {
           level: 'error',
           message: `Error: ${error}`,
           social: "Facebook",
-          user: this.pageId
+          user: this.pageId,
+          appKey: this.appKey
         });
       }
 
@@ -84,35 +87,40 @@ export default class FacebookPage extends EventEmitter {
           level: 'info',
           message: `Se recibió una ubicación: https://www.google.com/maps/place/${message.message.attachments[0].payload.coordinates.lat},${message.message.attachments[0].payload.coordinates.long}`,
           social: "Facebook",
-          user: this.pageId
+          user: this.pageId,
+          appKey: this.appKey
         });
       } else if (type == "audio") {
         logger.log({
           level: 'info',
           message: `Se recibió un audio: ${message.message.attachments[0].payload.url}`,
           social: "Facebook",
-          user: this.pageId
+          user: this.pageId,
+          appKey: this.appKey
         });
       } else if (type == "video") {
         logger.log({
           level: 'info',
           message: `Se recibió un video: ${message.message.attachments[0].payload.url}`,
           social: "Facebook",
-          user: this.pageId
+          user: this.pageId,
+          appKey: this.appKey
         });
       } else if (type == "image") {
         logger.log({
           level: 'info',
           message: `Se recibió un imagen: ${message.message.attachments[0].payload.url}`,
           social: "Facebook",
-          user: this.pageId
+          user: this.pageId,
+          appKey: this.appKey
         });
       } else if (type == "file") {
         logger.log({
           level: 'info',
           message: `Se recibió un archivo: ${message.message.attachments[0].payload.url}`,
           social: "Facebook",
-          user: this.pageId
+          user: this.pageId,
+          appKey: this.appKey
         });
       } 
   
@@ -121,7 +129,8 @@ export default class FacebookPage extends EventEmitter {
         level: 'info',
         message: `Se recibió: "${message.message.text}"`,
         social: "Facebook",
-        user: this.pageId
+        user: this.pageId,
+        appKey: this.appKey
       });
     }
   }
@@ -169,7 +178,8 @@ export default class FacebookPage extends EventEmitter {
             level: 'silly',
             message: `Se recibió attachmentType distinto: ${type}`,
             social: "Facebook",
-            user: this.pageId
+            user: this.pageId,
+            appKey: this.appKey
           });
         }
       }
@@ -186,7 +196,8 @@ export default class FacebookPage extends EventEmitter {
           level: 'error',
           message: `Error obteniendo el usuario: ${error}`,
           social: "Facebook",
-          user: this.pageId
+          user: this.pageId,
+          appKey: this.appKey
         });
       }
 
@@ -238,7 +249,8 @@ export default class FacebookPage extends EventEmitter {
           level: 'warn',
           message: `${error.toString()}`,
           social: "Facebook",
-          user: this.pageId
+          user: this.pageId,
+          appKey: this.appKey
         });
       } else {
         error = "Error desconocido";
@@ -271,7 +283,8 @@ export default class FacebookPage extends EventEmitter {
           level: 'error',
           message: `No se pudo enviar texto: ${error}`,
           social: "Facebook",
-          user: this.pageId
+          user: this.pageId,
+          appKey: this.appKey
         });
         reject(new Error("No se pudo enviar el texto a Facebook"));
       }
@@ -290,7 +303,8 @@ export default class FacebookPage extends EventEmitter {
           level: 'error',
           message: `No se pudo enviar audio: ${error}`,
           social: "Facebook",
-          user: this.pageId
+          user: this.pageId,
+          appKey: this.appKey
         });
         reject(new Error("No se pudo subir el audio a Facebook"));
       }
@@ -309,7 +323,8 @@ export default class FacebookPage extends EventEmitter {
           level: 'error',
           message: `No se pudo enviar imagen: ${error}`,
           social: "Facebook",
-          user: this.pageId
+          user: this.pageId,
+          appKey: this.appKey
         });
         reject(new Error("No se pudo subir el imagen a Facebook"));
       }
@@ -328,7 +343,8 @@ export default class FacebookPage extends EventEmitter {
           level: 'error',
           message: `No se pudo enviar video: ${error}`,
           social: "Facebook",
-          user: this.pageId
+          user: this.pageId,
+          appKey: this.appKey
         });
         reject(new Error("No se pudo subir el video a Facebook"));
       }
@@ -347,7 +363,8 @@ export default class FacebookPage extends EventEmitter {
           level: 'error',
           message: `No se pudo enviar archivo: ${error}`,
           social: "Facebook",
-          user: this.pageId
+          user: this.pageId,
+          appKey: this.appKey
         });
         reject(new Error("No se pudo subir el archivo a Facebook"));
       }

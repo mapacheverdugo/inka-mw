@@ -17,7 +17,7 @@ import {
 } from 'instagram_mqtt';
 import { IgApiClient, DirectThreadEntity, DirectInboxFeedResponseItemsItem, IgCheckpointError, IgLoginTwoFactorRequiredError } from "instagram-private-api";
 
-import logger from "../common/logger";
+import logger from "../common/social_logger";
 
 const IMAGE_TYPE = "image";
 const VIDEO_TYPE = "video";
@@ -50,7 +50,8 @@ export default class Instagram extends EventEmitter {
         level: 'error',
         message: `Error al inicializar: ${error}`,
         social: "Instagram",
-        user: `@${this.user}`
+        user: `@${this.user}`,
+        appKey: this.appKey
       });
     }
   }
@@ -62,7 +63,8 @@ export default class Instagram extends EventEmitter {
           level: 'info',
           message: `Iniciando sesión...`,
           social: "Instagram",
-          user: `@${this.user}`
+          user: `@${this.user}`,
+          appKey: this.appKey
         });
       
         if (this.user && this.pass) {
@@ -78,7 +80,8 @@ export default class Instagram extends EventEmitter {
             level: 'warn',
             message: `Requiere verificación, enviando código al correo...`,
             social: "Instagram",
-            user: `@${this.user}`
+            user: `@${this.user}`,
+            appKey: this.appKey
           });
           await this.ig.challenge.selectVerifyMethod("1", false);
         } else if (error instanceof IgLoginTwoFactorRequiredError) {
@@ -95,7 +98,8 @@ export default class Instagram extends EventEmitter {
             level: 'warn',
             message: `Requiere 2FA, enviando código por ${verificationMethod === '1' ? 'SMS' : 'TOTP'}...`,
             social: "Instagram",
-            user: `@${this.user}`
+            user: `@${this.user}`,
+            appKey: this.appKey
           });
         } else {
           reject(error);
@@ -113,7 +117,8 @@ export default class Instagram extends EventEmitter {
           level: 'info',
           message: `Intentando verificar el inicio de sesión...`,
           social: "Instagram",
-          user: `@${this.user}`
+          user: `@${this.user}`,
+          appKey: this.appKey
         });
       
         await this.ig.challenge.sendSecurityCode(code);
@@ -133,7 +138,8 @@ export default class Instagram extends EventEmitter {
           level: 'info',
           message: `Intentando verificar el inicio de sesión...`,
           social: "Instagram",
-          user: `@${this.user}`
+          user: `@${this.user}`,
+          appKey: this.appKey
         });
       
         await this.ig.account.twoFactorLogin({
@@ -151,7 +157,8 @@ export default class Instagram extends EventEmitter {
             level: 'warn',
             message: `Requiere verificación, enviando código al correo...`,
             social: "Instagram",
-            user: `@${this.user}`
+            user: `@${this.user}`,
+            appKey: this.appKey
           });
           await this.ig.challenge.selectVerifyMethod("1", false);
         } else {
@@ -172,7 +179,8 @@ export default class Instagram extends EventEmitter {
         level: 'silly',
         message: `Obteniendo solicitudes de mensaje...`,
         social: "Instagram",
-        user: `@${this.user}`
+        user: `@${this.user}`,
+        appKey: this.appKey
       });
       try {
           const pendings = await this.ig.feed.directPending().items();
@@ -182,7 +190,8 @@ export default class Instagram extends EventEmitter {
               level: 'info',
               message: `Se encontraron ${pendings.length} solicitudes de mensajes que se aprobaran.`,
               social: "Instagram",
-              user: `@${this.user}`
+              user: `@${this.user}`,
+              appKey: this.appKey
             });
           }
 
@@ -201,7 +210,8 @@ export default class Instagram extends EventEmitter {
           level: 'warn',
           message: `No se puedieron obtener los pendientes`,
           social: "Instagram",
-          user: `@${this.user}`
+          user: `@${this.user}`,
+          appKey: this.appKey
         });
       }
     }, interval);
@@ -212,7 +222,8 @@ export default class Instagram extends EventEmitter {
       level: 'info',
       message: `Sesión iniciada correctamente. Escuchando mensajes...`,
       social: "Instagram",
-      user: `@${this.user}`
+      user: `@${this.user}`,
+      appKey: this.appKey
     });
 
     try {
@@ -248,7 +259,8 @@ export default class Instagram extends EventEmitter {
             level: 'error',
             message: `Error: ${error}`,
             social: "Instagram",
-            user: `@${this.user}`
+            user: `@${this.user}`,
+            appKey: this.appKey
           });
         }
         
@@ -258,7 +270,8 @@ export default class Instagram extends EventEmitter {
         level: 'warn',
         message: `No se pudo obtener el nombre de usuario`,
         social: "Instagram",
-        user: `@${this.user}`
+        user: `@${this.user}`,
+        appKey: this.appKey
       });
     }
   }
@@ -271,7 +284,8 @@ export default class Instagram extends EventEmitter {
         level: 'info',
         message: `Se recibió: "${message.text}"`,
         social: "Instagram",
-        user: `@${this.user}`
+        user: `@${this.user}`,
+        appKey: this.appKey
       });
     } else if (message.item_type == "media") {
       if (message.media?.media_type == 1) {
@@ -279,14 +293,16 @@ export default class Instagram extends EventEmitter {
           level: 'info',
           message: `Se recibió una imagen: ${message.media?.image_versions2?.candidates[0].url}`,
           social: "Instagram",
-          user: `@${this.user}`
+          user: `@${this.user}`,
+          appKey: this.appKey
         });
       } else {
         logger.log({
           level: 'info',
           message: `Se recibió un video: ${message.media?.video_versions?.[0].url}`,
           social: "Instagram",
-        user: `@${this.user}`
+          user: `@${this.user}`,
+          appKey: this.appKey
         });
       }
     } else if (message.item_type == "voice_media") {
@@ -294,21 +310,24 @@ export default class Instagram extends EventEmitter {
         level: 'info',
         message: `Se recibió un mensaje de audio: ${message.voice_media?.media.audio.audio_src}`,
         social: "Instagram",
-        user: `@${this.user}`
+        user: `@${this.user}`,
+        appKey: this.appKey
       });
     } else if (message.item_type == "like") {
       logger.log({
         level: 'info',
         message: `Se recibió un like: "❤️"`,
         social: "Instagram",
-        user: `@${this.user}`
+        user: `@${this.user}`,
+        appKey: this.appKey
       });
     } else if (message.item_type == "animated_media") {
       logger.log({
         level: 'info',
         message: `Se recibió un GIF: ${message.animated_media?.images.fixed_height?.url}`,
         social: "Instagram",
-        user: `@${this.user}`
+        user: `@${this.user}`,
+        appKey: this.appKey
       });
     } else if (message.item_type == "raven_media") {
       if (message.visual_media?.media?.media_type == 1) {
@@ -316,14 +335,16 @@ export default class Instagram extends EventEmitter {
           level: 'info',
           message: `Se recibió una imagen efímera: ${message.visual_media?.media?.image_versions2?.candidates[0].url}`,
           social: "Instagram",
-          user: `@${this.user}`
+          user: `@${this.user}`,
+          appKey: this.appKey
         });
       } else {
         logger.log({
           level: 'info',
           message: `Se recibió un video efímero: ${message.visual_media?.media?.video_versions?.[1].url}`,
           social: "Instagram",
-          user: `@${this.user}`
+          user: `@${this.user}`,
+          appKey: this.appKey
         });
       }
     } 
@@ -347,7 +368,8 @@ export default class Instagram extends EventEmitter {
           level: 'error',
           message: `No se pudo obtener el nombre de usuario: ${error}`,
           social: "Instagram",
-          user: `@${this.user}`
+          user: `@${this.user}`,
+          appKey: this.appKey
         });
         userName = message.user_id.toString();
       }
@@ -441,7 +463,8 @@ export default class Instagram extends EventEmitter {
               level: 'debug',
               message: `Se recibio adjunto de typo ${message.msj.attachmentType}`,
               social: "Instagram",
-              user: `@${this.user}`
+              user: `@${this.user}`,
+              appKey: this.appKey
 
             });
             if (message.msj.attachmentType.startsWith(IMAGE_TYPE)) {
@@ -465,7 +488,8 @@ export default class Instagram extends EventEmitter {
           level: 'warn',
           message: `${error.toString()}`,
           social: "Instagram",
-          user: `@${this.user}`
+          user: `@${this.user}`,
+          appKey: this.appKey
         });
       } else {
         error = "Error desconocido";
@@ -591,7 +615,8 @@ export default class Instagram extends EventEmitter {
                   level: 'debug',
                   message: `El audio original tiene una duración de ${newDuration} segundos`,
                   social: "Instagram",
-                  user: `@${this.user}`
+                  user: `@${this.user}`,
+                  appKey: this.appKey
                 });
                 
                 command.on('error', (err: any) => {
@@ -709,7 +734,8 @@ export default class Instagram extends EventEmitter {
                     level: 'debug',
                     message: `El video original tiene un tamaño ${newSize}, con relación de aspecto ${newAspect}, duración ${newDuration}, y ${newFps} FPS`,
                     social: "Instagram",
-                    user: `@${this.user}`
+                    user: `@${this.user}`,
+                    appKey: this.appKey
                   });
                   
                   command.on('error', (err: any) => {
