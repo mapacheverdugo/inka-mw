@@ -168,13 +168,28 @@ export default class Instagram extends EventEmitter {
     });
   }
 
-  
+  sleep = (secs: number) => {
+    return new Promise((resolve) => {
+      setTimeout(resolve, secs * 1000);
+    });
+  }   
 
-  startListenAndAprovePendings = () => {
-    let secs = process.env.INSTAGRAM_SEC_INTERVAL ? parseInt(process.env.INSTAGRAM_SEC_INTERVAL) : 30
-    let interval = secs * 1000;
+  startListenAndAprovePendings = async () => {
+    const secs = process.env.INSTAGRAM_SEC_INTERVAL ? parseInt(process.env.INSTAGRAM_SEC_INTERVAL) : 600
+    const min = secs * 0.66;
+    const max = secs * 1.33;
 
-    setInterval(async () => {
+    while (true) {
+      let interval = Math.floor(Math.random() * (max - min) + min);
+
+      logger.log({
+        level: 'silly',
+        message: `Intervalo: ${interval} segundos`,
+        social: "Instagram",
+        user: `@${this.user}`,
+        appKey: this.appKey
+      });
+
       logger.log({
         level: 'silly',
         message: `Obteniendo solicitudes de mensaje...`,
@@ -182,6 +197,7 @@ export default class Instagram extends EventEmitter {
         user: `@${this.user}`,
         appKey: this.appKey
       });
+
       try {
           const pendings = await this.ig.feed.directPending().items();
 
@@ -214,7 +230,10 @@ export default class Instagram extends EventEmitter {
           appKey: this.appKey
         });
       }
-    }, interval);
+      await this.sleep(interval);
+    }
+
+    
   }
 
   startListener = async () => {
