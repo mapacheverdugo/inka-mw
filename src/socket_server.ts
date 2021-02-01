@@ -25,17 +25,26 @@ export default class SockerServer extends EventEmitter {
 
       socket.on('data', (chunk: any) => {
         if (chunk) {
-          const message = JSON.parse(chunk.toString());
-          logger.log({
-            level: 'debug',
-            message: `Recibido: ${message}`
-          });
-          this.emit("message", message);
-          socket.write(JSON.stringify({"code":"000","description":"Success Proccess"}) + "\r");
+          try {
+            const message = JSON.parse(chunk.toString());
+            logger.log({
+              level: 'debug',
+              message: `Recibido: ${message}`
+            });
+            this.emit("message", message);
+            socket.write(JSON.stringify({"code":"000","description":"Success Proccess"}) + "\r");
+          } catch (e) {
+            logger.log({
+              level: 'warn',
+              message: `No se pudieron procesar los datos recibidos: ${chunk.toString()}`
+            });
+            socket.end();
+          }
         }
       });
 
       socket.on('error', (err: any) => {
+        
         logger.log({
           level: 'error',
           message: `Error en el servidor socket: ${err}`
