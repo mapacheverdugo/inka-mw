@@ -100,6 +100,7 @@ const main = async () => {
 
       expressServer.on("facebookWebhook", (appKey: any, data: any) => {
         const fb = foundSocial(appKey);
+        
         if (fb && fb instanceof Facebook) {
           fb.handle(data);
         } else {

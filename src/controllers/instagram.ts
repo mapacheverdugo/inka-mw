@@ -175,32 +175,29 @@ export default class Instagram extends EventEmitter {
   }   
 
   startListenAndAprovePendings = async () => {
-    const secs = process.env.INSTAGRAM_SEC_INTERVAL ? parseInt(process.env.INSTAGRAM_SEC_INTERVAL) : 600
-    const min = secs * 0.66;
-    const max = secs * 1.33;
+    await this.ig.fbns.connect({
+      autoReconnect: true
+    });
 
-    while (true) {
-      let interval = Math.floor(Math.random() * (max - min) + min);
-
-      logger.log({
-        level: 'silly',
-        message: `Intervalo: ${interval} segundos`,
-        social: "Instagram",
-        user: `@${this.user}`,
-        appKey: this.appKey
-      });
-
-      logger.log({
-        level: 'silly',
-        message: `Obteniendo solicitudes de mensaje...`,
-        social: "Instagram",
-        user: `@${this.user}`,
-        appKey: this.appKey
-      });
-
+    this.ig.fbns.on('push', async (data) => {
       try {
-          const pendings = await this.ig.feed.directPending().items();
+        const secs = process.env.INSTAGRAM_SEC_DELAY ? parseInt(process.env.INSTAGRAM_SEC_DELAY) : 60
+        const min = secs * 0.66;
+        const max = secs * 1.33;
+        const delay = Math.floor(Math.random() * (max - min) + min);
 
+        logger.log({
+          level: 'silly',
+          message: `Delay: ${delay} segundos`,
+          social: "Instagram",
+          user: `@${this.user}`,
+          appKey: this.appKey
+        });
+
+        if (data.pushCategory === 'direct_v2_pending') {
+          await this.sleep(delay);
+
+          const pendings = await this.ig.feed.directPending().items()
           if (pendings.length > 0) {
             logger.log({
               level: 'info',
@@ -220,7 +217,7 @@ export default class Instagram extends EventEmitter {
               this.emit('message', parsedMessage);
             }
           }
-        
+        }
       } catch (error) {
         logger.log({
           level: 'warn',
@@ -230,10 +227,7 @@ export default class Instagram extends EventEmitter {
           appKey: this.appKey
         });
       }
-      await this.sleep(interval);
-    }
-
-    
+    });
   }
 
   startListener = async () => {
@@ -262,7 +256,7 @@ export default class Instagram extends EventEmitter {
       });
 
       let userId = await this.ig.user.getIdByUsername(this.user);
-
+      
       this.ig.realtime.on('message', async (data) => {
         try {
           let isSelfMessage = userId == data.message.user_id;
