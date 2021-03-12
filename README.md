@@ -76,8 +76,15 @@ PGPORT=5432
 
 ### 1.4. Instrucciones
 
+Inka-mw requiere de node V12.0.0, por lo que se debe instalar precisamente dicha version.
+
 1. Instalar librerías y dependencias
 ```bash
+npm install -g n
+n stable
+n 12.0.0
+rm -rf ~/.node-gyp
+rm -rf package-lock.json node_modules/
 npm install
 ```
 
@@ -89,7 +96,7 @@ npm start
 ```bash
 rm -rf package-lock.json node_modules/
 ```
-y luego instalarlas nuevamente.
+y luego instalarlas nuevamente (previamente ya habiendo instalado node v12.0.0).
 ```bash
 npm install
 ```
