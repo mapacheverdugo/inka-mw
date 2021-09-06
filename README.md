@@ -48,7 +48,7 @@ FACEBOOK_PORT=9021
 
 INSTAGRAM_VALUE=Instagram
 INSTAGRAM_PORT=9022
-INSTAGRAM_SEC_INTERVAL=30
+INSTAGRAM_SEC_DELAY=600
 
 PGUSER=aware
 PGHOST=123.12.123.123
@@ -67,7 +67,7 @@ PGPORT=5432
 | `FACEBOOK_PORT`          | Puerto donde correrá el servido socket TCP para recibir mensajes de Facebook.                                             |
 | `INSTAGRAM_VALUE`        | Valor en la tabla `inka_app` de las aplicaciones Instagram. Por defecto debe ser `Instagram`.                             |
 | `INSTAGRAM_PORT`         | Puerto donde correrá el servido socket TCP para recibir mensajes de Instagram.                                            |
-| `INSTAGRAM_SEC_INTERVAL` | Intervalo en segundos que define cada cuanto se procesarán las "solicitudes de mensajes" en Instagram.                    |
+| `INSTAGRAM_SEC_DELAY` | Intervalo en segundos que define cada cuanto se procesarán las "solicitudes de mensajes" en Instagram.                    |
 | `PGUSER`                 | Usuario de la base de datos PostgreSQL.                                                                                   |
 | `PGHOST`                 | IP o host de la base de datos PostgreSQL.                                                                                 |
 | `PGPASSWORD`             | Contraseña de la base de datos PostgreSQL.                                                                                |

@@ -1,8 +1,8 @@
-import {EventEmitter} from "events";
+import { EventEmitter } from "events";
+import logger from "../common/social_logger";
 
 const { Messenger, Text, Audio, Video, Image, File } = require('fbmessenger');
 
-import logger from "../common/social_logger";
 
 const IMAGE_TYPE = "image";
 const VIDEO_TYPE = "video";
@@ -11,14 +11,14 @@ const FILE_TYPE = null;
 const GEO_TYPE = null;
 
 export default class FacebookPage extends EventEmitter {
-  messenger: any;
+  client: any;
   appKey: string;
   pageId: any;
 
   constructor(appKey: string, pageId: string, pageAccessToken: string | undefined) {
     super();
     this.appKey = appKey;
-    this.messenger = new Messenger({
+    this.client = new Messenger({
       pageAccessToken
     });
     this.pageId = pageId;
@@ -39,7 +39,7 @@ export default class FacebookPage extends EventEmitter {
   }
 
   handle = async (body: any) => {
-    return this.messenger.handle(body);
+    return this.client.handle(body);
   }
 
   startListener = () => {
@@ -51,7 +51,7 @@ export default class FacebookPage extends EventEmitter {
       appKey: this.appKey
     });
 
-    this.messenger.on('message', async (message: any) => {
+    this.client.on('message', async (message: any) => {
       const recipient = message.recipient.id;
 
       try {
@@ -187,7 +187,7 @@ export default class FacebookPage extends EventEmitter {
       let user;
 
       try {
-        user = await this.messenger.getUser(sender, [
+        user = await this.client.getUser(sender, [
           'first_name',
           'last_name'
         ])
@@ -276,7 +276,7 @@ export default class FacebookPage extends EventEmitter {
   sendText = (userId: string, text: string) => {
     return new Promise(async (resolve, reject) => {
       try {
-        let res = await this.messenger.send(new Text(text), userId);
+        let res = await this.client.send(new Text(text), userId);
         resolve(res);
       } catch (error) {
         logger.log({
@@ -294,7 +294,7 @@ export default class FacebookPage extends EventEmitter {
   sendAudio = (userId: string, url: string) => {
     return new Promise(async (resolve, reject) => {
       try {
-        let res = await this.messenger.send(new Audio({
+        let res = await this.client.send(new Audio({
           url,
         }), userId);
         resolve(res);
@@ -314,7 +314,7 @@ export default class FacebookPage extends EventEmitter {
   sendImage = (userId: string, url: string) => {
     return new Promise(async (resolve, reject) => {
       try {
-        let res = await this.messenger.send(new Image({
+        let res = await this.client.send(new Image({
           url,
         }), userId);
         resolve(res);
@@ -334,7 +334,7 @@ export default class FacebookPage extends EventEmitter {
   sendVideo = (userId: string, url: string) => {
     return new Promise(async (resolve, reject) => {
       try {
-        let res = await this.messenger.send(new Video({
+        let res = await this.client.send(new Video({
           url,
         }), userId);
         resolve(res);
@@ -354,7 +354,7 @@ export default class FacebookPage extends EventEmitter {
   sendFile =(userId: string, url: string) => {
     return new Promise(async (resolve, reject) => {
       try {
-        let res = await this.messenger.send(new File({
+        let res = await this.client.send(new File({
           url,
         }), userId);
         resolve(res);
@@ -369,5 +369,9 @@ export default class FacebookPage extends EventEmitter {
         reject(new Error("No se pudo subir el archivo a Facebook"));
       }
     })
+  }
+
+  public destroy = async () => {
+    await this.client.destroy();
   }
 }

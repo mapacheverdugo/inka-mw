@@ -1,8 +1,8 @@
 
 import { EventEmitter } from "events";
 import Net from 'net';
-
 import logger from "./common/logger";
+
 
 export default class SockerServer extends EventEmitter {
   server = new Net.Server();
@@ -29,7 +29,7 @@ export default class SockerServer extends EventEmitter {
             const message = JSON.parse(chunk.toString());
             logger.log({
               level: 'debug',
-              message: `Recibido: ${message}`
+              message: `Recibido: ${JSON.stringify(message)}`
             });
             this.emit("message", message);
             socket.write(JSON.stringify({"code":"000","description":"Success Proccess"}) + "\r");
@@ -38,7 +38,7 @@ export default class SockerServer extends EventEmitter {
               level: 'warn',
               message: `No se pudieron procesar los datos recibidos: ${chunk.toString()}`
             });
-            socket.end();
+            //socket.end();
           }
         }
       });

@@ -1,12 +1,12 @@
+import bodyParser from 'body-parser';
+import crypto from 'crypto';
 import { EventEmitter } from 'events';
 import express from 'express';
-import crypto from 'crypto';
-import bodyParser from 'body-parser';
 import fs from "fs";
 import http from "http";
 import https from "https";
-
 import logger from "./common/logger";
+
 
 var privateKey: any;
 var certificate: any;
@@ -39,6 +39,13 @@ export default class ExpressServer extends EventEmitter {
     this.app.get('/', (req: any, res: any) => {
       res.status(200).json({
         message: "API REST funcionando correctamente"
+      });
+    });
+
+    this.app.post('/refresh', async (req: any, res: any) => {
+      this.emit("refreshClients");
+      res.status(200).json({
+        message: "Se envió la petición correctamente."
       });
     });
 
